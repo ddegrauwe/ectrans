@@ -89,8 +89,8 @@ real(kind=jprd) :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
 real(kind=jprd) :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
 real(kind=jprd), allocatable :: ztstep(:), ztstep1(:), ztstep2(:)
 
-real(kind=jprb), allocatable :: znormsp(:), znormsp1(:), znormdiv(:), znormdiv1(:)
-real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
+real(kind=jprb), allocatable :: znormsp(:), znormsp0(:), znormdiv(:), znormdiv0(:)
+real(kind=jprb), allocatable :: znormvor(:), znormvor0(:), znormt(:), znormt0(:)
 real(kind=jprd) :: zaveave(0:jpmaxstat)
 
 ! Grid-point space data structures
@@ -245,11 +245,11 @@ if( lstats ) call gstats(0,0)
 ztinit = timef()
 
 ! only output to stdout on pe 1
-if (nproc > 1) then
-  if (myproc /= 1) then
-    open(unit=nout, file='/dev/null')
-  endif
-endif
+!if (nproc > 1) then
+  !if (myproc /= 1) then
+    !open(unit=nout, file='output_'//char(myproc/10+48)//char(myproc+48)//'.dat')
+  !endif
+!endif
 
 if (ldetailed_stats) then
   lstats_omp    = .true.
@@ -482,37 +482,41 @@ allocate(zgpuv(nproma,nflevg,jend_vder_EW,ngpblks))
 allocate(zgp3a(nproma,nflevg,jend_scder_EW-jbegin_sc+1,ngpblks))
 allocate(zgp2(nproma,ndimgmvs,ngpblks))
 
+zgp2=0.
+zgp3a=0.
+zgpuv=0.
+
 !===================================================================================================
 ! Allocate norm arrays
 !===================================================================================================
 
 if (lprint_norms .or. ncheck > 0) then
   allocate(znormsp(1))
-  allocate(znormsp1(1))
+  allocate(znormsp0(1))
   allocate(znormvor(nflevg))
-  allocate(znormvor1(nflevg))
+  allocate(znormvor0(nflevg))
   allocate(znormdiv(nflevg))
-  allocate(znormdiv1(nflevg))
+  allocate(znormdiv0(nflevg))
   allocate(znormt(nflevg))
-  allocate(znormt1(nflevg))
+  allocate(znormt0(nflevg))
 
-  call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg))
-  call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg))
-  call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
-  call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc)
-
-  if (verbosity >= 1) then
+  call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor0, kvset=ivset(1:nflevg))
+  call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv0, kvset=ivset(1:nflevg))
+  call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt0,   kvset=ivset(1:nflevg))
+  call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp0,  kvset=ivsetsc)
+  
+  if (verbosity >= 1 .and. myproc == 1) then
     do ifld = 1, nflevg
-      write(nout,'("norm zspvor( ",i4,",:)   = ",f20.15)') ifld, znormvor1(ifld)
+      write(nout,'("norm zspvor( ",i4,",:)   = ",f20.15)') ifld, znormvor0(ifld)
     enddo
     do ifld = 1, nflevg
-      write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15)') ifld, znormdiv1(ifld)
+      write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15)') ifld, znormdiv0(ifld)
     enddo
     do ifld = 1, nflevg
-      write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormt1(ifld)
+      write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormt0(ifld)
     enddo
     do ifld = 1, 1
-      write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15)') ifld, znormsp1(ifld)
+      write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15)') ifld, znormsp0(ifld)
     enddo
   endif
 endif
@@ -545,6 +549,20 @@ ztstepmin1 = 9999999999999999._jprd
 ztstepavg2 = 0._jprd
 ztstepmax2 = 0._jprd
 ztstepmin2 = 9999999999999999._jprd
+
+!=================================================================================================
+! Dump the values to disk, for debugging only
+!=================================================================================================
+
+if (ldump_values) then
+	! dump a field to a binary file
+	call dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, zspsc2(1,:),ivsetsc(1:1), 'S', noutdump)
+	if (lvordiv) then
+	  call dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, zspdiv(1,:),ivset(1:1), 'D', noutdump)
+	  call dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, zspvor(1,:),ivset(1:1), 'V', noutdump)
+	endif
+    call dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, zspsc3a(1,:,1),ivset(1:1), 'T', noutdump)
+endif
 
 write(nout,'(a)') '======= Start of spectral transforms  ======='
 write(nout,'(" ")')
@@ -597,6 +615,7 @@ do jstep = 1, iters
        & pgp3a=zgp3a)
 
   endif
+  
   call gstats(4,1)
 
   ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
@@ -614,7 +633,7 @@ do jstep = 1, iters
 	endif
     call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgp3a(:,nflevg,1,:), 'T', noutdump)
   endif
-
+  
   !=================================================================================================
   ! Do direct transform
   !=================================================================================================
@@ -649,6 +668,21 @@ do jstep = 1, iters
   call gstats(5,1)
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
 
+
+	!=================================================================================================
+	! Dump the values to disk, for debugging only
+	!=================================================================================================
+
+	if (ldump_values) then
+		! dump a field to a binary file
+		call dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, zspsc2(1,:),ivsetsc(1:1), 'S', noutdump)
+		if (lvordiv) then
+		  call dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, zspdiv(1,:),ivset(1), 'D', noutdump)
+		  call dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, zspvor(1,:),ivset(1:1), 'V', noutdump)
+		endif
+		call dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, zspsc3a(1,:,1),ivset(1:1), 'T', noutdump)
+	endif
+
   !=================================================================================================
   ! Calculate timings
   !=================================================================================================
@@ -677,32 +711,35 @@ do jstep = 1, iters
     call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
     call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
+	
+	if ( myproc == 1 ) then
 
-    ! Surface pressure
-    zmaxerr(:) = -999.0
-    do ifld = 1, 1
-      zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
-      zmaxerr(1) = max(zmaxerr(1), zerr(1))
-    enddo
-    ! Divergence
-    do ifld = 1, nflevg
-      zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0_jprb)
-      zmaxerr(2) = max(zmaxerr(2), zerr(2))
-    enddo
-    ! Vorticity
-    do ifld = 1, nflevg
-      zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0_jprb)
-      zmaxerr(3) = max(zmaxerr(3),zerr(3))
-    enddo
-    ! Temperature
-    do ifld = 1, nflevg
-      zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
-      zmaxerr(4) = max(zmaxerr(4), zerr(4))
-    enddo
-    write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
-                &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
-    call gstats(6,1)
+		! Surface pressure
+		zmaxerr(:) = -999.0
+		do ifld = 1, 1
+		  zerr(1) = abs(znormsp(ifld)/znormsp0(ifld) - 1.0_jprb)
+		  zmaxerr(1) = max(zmaxerr(1), zerr(1))
+		enddo
+		! Divergence
+		do ifld = 1, nflevg
+		  zerr(2) = abs(znormdiv(ifld)/znormdiv0(ifld) - 1.0_jprb)
+		  zmaxerr(2) = max(zmaxerr(2), zerr(2))
+		enddo
+		! Vorticity
+		do ifld = 1, nflevg
+		  zerr(3) = abs(znormvor(ifld)/znormvor0(ifld) - 1.0_jprb)
+		  zmaxerr(3) = max(zmaxerr(3),zerr(3))
+		enddo
+		! Temperature
+		do ifld = 1, nflevg
+		  zerr(4) = abs(znormt(ifld)/znormt0(ifld) - 1.0_jprb)
+		  zmaxerr(4) = max(zmaxerr(4), zerr(4))
+		enddo
+		write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
+					& " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
+					&  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
+    endif
+	call gstats(6,1)
   else
     write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
   endif
@@ -723,60 +760,63 @@ if (lprint_norms .or. ncheck > 0) then
   call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
   call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
   call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
+  
+  if ( myproc == 1 ) then
 
-  zmaxerr(:) = -999.0
-  do ifld = 1, nflevg
-    zerr(3) = abs(real(znormvor1(ifld),kind=jprd)/real(znormvor(ifld),kind=jprd) - 1.0_jprd)
-    zmaxerr(3) = max(zmaxerr(3), zerr(3))
-    if (verbosity >= 1) then
-      write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') ifld, znormvor1(ifld), zerr(3)
-    endif
-  enddo
-  do ifld = 1, nflevg
-    zerr(2) = abs(real(znormdiv1(ifld),kind=jprd)/real(znormdiv(ifld),kind=jprd) - 1.0d0)
-    zmaxerr(2) = max(zmaxerr(2),zerr(2))
-    if (verbosity >= 1) then
-      write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormdiv1(ifld), zerr(2)
-    endif
-  enddo
-  do ifld = 1, nflevg
-    zerr(4) = abs(real(znormt1(ifld),kind=jprd)/real(znormt(ifld),kind=jprd) - 1.0d0)
-    zmaxerr(4) = max(zmaxerr(4), zerr(4))
-    if (verbosity >= 1) then
-      write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt1(ifld), zerr(4)
-    endif
-  enddo
-  do ifld = 1, 1
-    zerr(1) = abs(real(znormsp1(ifld),kind=jprd)/real(znormsp(ifld),kind=jprd) - 1.0d0)
-    zmaxerr(1) = max(zmaxerr(1), zerr(1))
-    if (verbosity >= 1) then
-      write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormsp1(ifld), zerr(1)
-    endif
-  enddo
+	  zmaxerr(:) = -999.0
+	  do ifld = 1, nflevg
+		zerr(3) = abs(real(znormvor(ifld),kind=jprd)/real(znormvor0(ifld),kind=jprd) - 1.0_jprd)
+		zmaxerr(3) = max(zmaxerr(3), zerr(3))
+		if (verbosity >= 1) then
+		  write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') ifld, znormvor0(ifld), zerr(3)
+		endif
+	  enddo
+	  do ifld = 1, nflevg
+		zerr(2) = abs(real(znormdiv(ifld),kind=jprd)/real(znormdiv0(ifld),kind=jprd) - 1.0d0)
+		zmaxerr(2) = max(zmaxerr(2),zerr(2))
+		if (verbosity >= 1) then
+		  write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormdiv0(ifld), zerr(2)
+		endif
+	  enddo
+	  do ifld = 1, nflevg
+		zerr(4) = abs(real(znormt(ifld),kind=jprd)/real(znormt0(ifld),kind=jprd) - 1.0d0)
+		zmaxerr(4) = max(zmaxerr(4), zerr(4))
+		if (verbosity >= 1) then
+		  write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt0(ifld), zerr(4)
+		endif
+	  enddo
+	  do ifld = 1, 1
+		zerr(1) = abs(real(znormsp(ifld),kind=jprd)/real(znormsp0(ifld),kind=jprd) - 1.0d0)
+		zmaxerr(1) = max(zmaxerr(1), zerr(1))
+		if (verbosity >= 1) then
+		  write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormsp0(ifld), zerr(1)
+		endif
+	  enddo
 
-  ! maximum error across all fields
-  zmaxerrg = max(max(zmaxerr(1),zmaxerr(2)), max(zmaxerr(2), zmaxerr(3)))
+	  ! maximum error across all fields
+	  zmaxerrg = max(max(zmaxerr(1),zmaxerr(2)), max(zmaxerr(2), zmaxerr(3)))
 
-  if (verbosity >= 1) write(nout,*)
-  write(nout,'("max error zspvor(1:nlev,:)    = ",e10.3)') zmaxerr(3)
-  write(nout,'("max error zspdiv(1:nlev,:)    = ",e10.3)') zmaxerr(2)
-  write(nout,'("max error zspsc3a(1:nlev,:,1) = ",e10.3)') zmaxerr(4)
-  write(nout,'("max error zspsc2(1:1,:)       = ",e10.3)') zmaxerr(1)
-  write(nout,*)
-  write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
-  write(nout,*)
+	  if (verbosity >= 1) write(nout,*)
+	  write(nout,'("max error zspvor(1:nlev,:)    = ",e10.3)') zmaxerr(3)
+	  write(nout,'("max error zspdiv(1:nlev,:)    = ",e10.3)') zmaxerr(2)
+	  write(nout,'("max error zspsc3a(1:nlev,:,1) = ",e10.3)') zmaxerr(4)
+	  write(nout,'("max error zspsc2(1:1,:)       = ",e10.3)') zmaxerr(1)
+	  write(nout,*)
+	  write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
+	  write(nout,*)
 
-  if (ncheck > 0 .and. myproc == 1) then
-    ! If the maximum spectral norm error across all fields is greater than 100 times the machine
-    ! epsilon, fail the test
-    if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
-      write(nout, '(a)') '*******************************'
-      write(nout, '(a)') 'Correctness test failed'
-      write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
-      write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
-      write(nout, '(a)') '*******************************'
-      error stop
-    endif
+	  if (ncheck > 0) then
+		! If the maximum spectral norm error across all fields is greater than 100 times the machine
+		! epsilon, fail the test
+		if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
+		  write(nout, '(a)') '*******************************'
+		  write(nout, '(a)') 'Correctness test failed'
+		  write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
+		  write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
+		  write(nout, '(a)') '*******************************'
+		  error stop
+		endif
+	  endif
   endif
 endif
 
@@ -1189,18 +1229,34 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
 
   integer :: ispec, kspec2
   integer, allocatable :: my_km(:), my_kn(:)
+  real(kind=jprb) :: zz(1) ! random amplitude
 
   ! Choose a spherical harmonic to initialize arrays
-  integer :: m_num = 2 ! Zonal wavenumber
-  integer :: n_num = 3 ! Meridional wavenumber
+  integer :: m_num = 4 ! Zonal wavenumber
+  integer :: n_num = 12 ! Meridional wavenumber
+  logical, save :: llfirst=.true.
+  integer :: seed(20)
+  integer(kind=jpim) :: jcmp
+  seed=20220428
+  
+  if (llfirst) call random_seed(put=seed)
+  call random_number(zz)
+  jcmp=int(4*zz(1))
+  call random_number(zz)
+  
+  llfirst=.false.
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0
   
   ! make sure wavenumbers are within truncation
-  if ( m_num>nmsmax .or. n_num > nsmax .or. ( (m_num/real(nmsmax))**2+(n_num/real(nsmax))**2) > 1.) then
+  if ( m_num>nmsmax .or. n_num > nsmax .or. &
+   & ( nsmax>0 .and. nmsmax>0 .and. ( (m_num/real(nmsmax))**2+(n_num/real(nsmax))**2 ) > 1.) ) then
     write (nerr,*)
-	write (nerr,*) 'WARNING: INITIAL WAVENUMBERS OUTSIDE OF TRUNCATION! USING (NMSMAX/2, NSMAX/2) instead'
+	write (nerr,*) 'WARNING: INITIAL WAVENUMBERS OUTSIDE OF TRUNCATION! '
+	write (nerr,*) 'm_num = ',m_num,'; nmsmax = ',nmsmax,'; n_num = ',n_num,'; nsmax = ',nsmax,&
+	 & '; ellips check: ',(m_num/real(nmsmax))**2+(n_num/real(nsmax))**2
+	write (nerr,*) 'USING (kx=',NMSMAX/2,', ky=', NSMAX/2,') instead'
 	write (nerr,*)
 	m_num=nmsmax/2
 	n_num=nsmax/2
@@ -1218,7 +1274,24 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
     !field(ispec+1)=1.0 ! cos*sin
     !field(ispec+2)=1.0 ! sin*cos
     !field(ispec+3)=1.0 ! sin*sin
+	!field(ispec+jcmp)=zz(1) ! random component
     end if
+  enddo
+  
+  ! random power spectrum
+  call random_number(field)
+  field=2*field-1.
+  ! set some components to zero because they are unphysical
+  do ispec=1,nspec2,4
+    if ( my_kn(ispec)== 0 .and. my_km(ispec) == 0 ) field(ispec:ispec+3)=0. ! remove mean value for vorticity and divergence
+	if ( my_kn(ispec)== 0 ) field(ispec+1:ispec+3:2)=0. ! remove sine component on zero-wavenumber
+	if ( my_kn(ispec)== nmsmax ) field(ispec+1:ispec+3:2)=0. ! remove sine component on last-wavenumber
+	if ( my_km(ispec)== 0 ) field(ispec+2:ispec+3)=0. ! remove sine component on zero-wavenumber
+	if ( my_km(ispec)== nsmax ) field(ispec+2:ispec+3)=0. ! remove sine component on last-wavenumber
+  enddo
+  ! scale according to wavenumber**2
+  do ispec=1,nspec2
+    field(ispec)=field(ispec)/(0.01+(my_kn(ispec)/real(nsmax))**2+(my_km(ispec)/real(nmsmax))**2)
   enddo
 
 end subroutine initialize_2d_spectral_field
@@ -1227,7 +1300,7 @@ end subroutine initialize_2d_spectral_field
 
 subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldchar, noutdump)
 
-  ! Dump a 2d field to a binary file.
+  ! Dump a 2d gridpoint field to screen or a binary file.
 
   integer(kind=jpim), intent(in) :: jstep ! Time step, used for naming file
   integer(kind=jpim), intent(in) :: myproc ! MPI rank, used for naming file
@@ -1236,13 +1309,13 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
   integer(kind=jpim), intent(in) :: ngpblks ! Number of nproma blocks
   real(kind=jprb)   , intent(in) :: fld(nproma,1,ngpblks) ! 2D field
   character         , intent(in) :: fldchar ! Single character field identifier
-  integer(kind=jpim), intent(in) :: noutdump ! Tnit number for output file
+  integer(kind=jpim), intent(in) :: noutdump ! Unit number for output file
   
   integer(kind=jpim) :: kgptotg      ! global number of gridpoints
   real(kind=jprb), allocatable :: fldg(:,:)  ! global field
   integer(kind=jpim) :: kfgathg=1    ! number of fields to gather
   integer(kind=jpim) :: kto(1)=(/1/) ! processor where to gather
-  character(len=9)  :: filename = "x.xxx.dat"
+  character(len=14)  :: filename = "x.xxx.xxx.grid"
   character(len=13) :: frmt='(4X,xxxxF8.2)'
 
 #include "etrans_inq.h"
@@ -1257,17 +1330,23 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
   if ( myproc == 1 ) then
  
     ! write to file
-    !write(filename(1:1),'(a1)') fldchar
-    !write(filename(3:5),'(i3.3)') jstep
-    !open(noutdump, file=filename, form="unformatted", access="stream")
-    !write(noutdump) fldg
-    !close(noutdump)
+    write(filename(1:1),'(a1)') fldchar
+    write(filename(3:5),'(i3.3)') jstep
+#ifdef ACCGPU
+    write(filename(7:9),'(a3)') 'gpu'
+#else
+    write(filename(7:9),'(a3)') 'cpu'
+#endif
+    open(noutdump, file=filename, form="unformatted", access="stream")
+    write(noutdump) kgptotg/nlat,nlat ! dimensions
+	write(noutdump) fldg ! data
+    close(noutdump)
     
     ! write to screen
-    write(frmt(5:8),'(i4.4)') kgptotg/nlat
-    write (*,*) fldchar,' at iteration ',jstep,':'
-    write (*,frmt) fldg
-    call flush(6)
+    !write(frmt(5:8),'(i4.4)') kgptotg/nlat
+    !write (*,*) fldchar,' at iteration ',jstep,':'
+    !write (*,frmt) fldg
+    !call flush(6)
 	
     deallocate(fldg)
   
@@ -1275,6 +1354,83 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
   
 
 end subroutine dump_gridpoint_field
+
+!===================================================================================================
+
+subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset, fldchar, noutdump)
+
+  ! Dump a 2d spectral field to screen or a binary file.
+
+  integer(kind=jpim), intent(in) :: jstep ! Time step, used for naming file
+  integer(kind=jpim), intent(in) :: myproc ! MPI rank, used for naming file
+  integer(kind=jpim), intent(in) :: nspec2 ! Size of nspec2 (number of waves on this proc in M-space)
+  integer(kind=jpim), intent(in) :: nsmax
+  integer(kind=jpim), intent(in) :: nmsmax
+  real(kind=jprb)   , intent(in) :: fld(1,nspec2) ! 2D field
+  integer(kind=jpim), intent(in) :: kvset(1)   ! B-set on which the field resides
+  character         , intent(in) :: fldchar ! Single character field identifier
+  integer(kind=jpim), intent(in) :: noutdump ! Unit number for output file
+  
+  integer(kind=jpim) :: nspec2g              ! global number of gridpoints
+  real(kind=jprb), allocatable :: fldg(:,:)  ! global field (nspec2g)
+  integer(kind=jpim) :: kfgathg=1    ! number of fields to gather
+  integer(kind=jpim) :: kto(1)=(/1/) ! processor where to gather
+  character(len=14)   :: filename = "x.xxx.xxx.spec"
+  character(len=13)  :: frmt='(4X,xxxxF8.2)' ! for printing to screen
+  integer(kind=jpim) :: knse(0:nmsmax),kmse(0:nsmax) ! elliptic truncation
+  real(kind=jprb)    :: fld2g(0:2*nmsmax+1,0:2*nsmax+1) ! 2D representation of spectral field
+  integer(kind=jpim) :: jj, jms, jns
+  
+#include "etrans_inq.h"
+#include "egath_spec.h"
+  
+  if ( myproc == 1 ) then
+    call etrans_inq(kspec2g=nspec2g)
+    allocate(fldg(1,nspec2g))
+	call ellips(nsmax,nmsmax,knse,kmse)
+  endif
+
+  call egath_spec(PSPECG=fldg,kfgathg=kfgathg,kto=kto,kvset=kvset,PSPEC=fld)
+  
+  if ( myproc == 1 ) then
+
+	fld2g=0.
+	jj=1
+	do jms=0,nmsmax
+	  do jns=0,knse(jms)
+		fld2g(2*jms+0,2*jns+0)=fldg(1,jj)
+		fld2g(2*jms+0,2*jns+1)=fldg(1,jj+1)
+		fld2g(2*jms+1,2*jns+0)=fldg(1,jj+2)
+		fld2g(2*jms+1,2*jns+1)=fldg(1,jj+3)
+		jj=jj+4
+	  enddo
+	enddo
+	
+    ! write to binary file
+    write(filename(1:1),'(a1)') fldchar
+    write(filename(3:5),'(i3.3)') jstep
+#ifdef ACCGPU
+    write(filename(7:9),'(a3)') 'gpu'
+#else
+    write(filename(7:9),'(a3)') 'cpu'
+#endif
+    open(noutdump, file=filename, form="unformatted", access="stream")
+	write(noutdump) 2*nmsmax+2,2*nsmax+2  ! dimensions
+    write(noutdump) fld2g             ! data
+    close(noutdump)
+    
+    ! write to screen
+    !write(frmt(5:8),'(i4.4)') 2*(nmsmax+1)
+    !write (*,*) fldchar,' at iteration ',jstep,':'
+    !write (*,frmt) fld2g
+    !call flush(6)
+	
+    deallocate(fldg)
+  
+  endif
+  
+
+end subroutine dump_spectral_field
 
 !===================================================================================================
 

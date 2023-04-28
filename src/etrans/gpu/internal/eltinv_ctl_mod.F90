@@ -115,6 +115,14 @@ ELSE
 !$acc enter data create (FOUBUF)
 ENDIF
 
+!!$acc data present(FOUBUF_IN)
+!!$acc update host(FOUBUF_IN)
+!!$acc end data
+!write (*,*) __FILE__, __LINE__
+!write (*,*)' FOUBUF_IN = ',FOUBUF_IN
+!call flush(6)
+
+
 CALL GSTATS(152,0)
 #ifdef USE_CUDA_AWARE_MPI_FT
 CALL TRMTOL_CUDAAWARE(FOUBUF_IN,FOUBUF,2*KF_OUT_LT)
@@ -123,7 +131,12 @@ CALL TRMTOL(FOUBUF_IN,FOUBUF,2*KF_OUT_LT)
 #endif
 CALL GSTATS(152,1)
 
-
+!!$acc data present(FOUBUF)
+!!$acc update host(FOUBUF)
+!!$acc end data
+!write (*,*) __FILE__, __LINE__
+!write (*,*)' FOUBUF = ',FOUBUF
+!call flush(6)
 
 IF (.NOT.LALLOPERM) THEN
 !$acc exit data delete (FOUBUF_IN)

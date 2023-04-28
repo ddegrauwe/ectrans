@@ -8,7 +8,7 @@
     rm -rf ${BUILDDIR}/ectrans ${INSTALLDIR}/ectrans
     mkdir -p ${BUILDDIR}/ectrans
     cd ${BUILDDIR}/ectrans
-    ecbuild --prefix=${INSTALLDIR}/ectrans -Dfiat_ROOT=${INSTALLDIR}/fiat -DBUILD_SHARED_LIBS=OFF -DENABLE_FFTW=OFF -DENABLE_GPU=ON -DENABLE_OMPGPU=OFF -DENABLE_ACCGPU=ON -DENABLE_TESTS=OFF -DENABLE_GPU_AWARE_MPI=ON -DENABLE_CPU=OFF -DENABLE_ETRANS=ON ${SOURCEDIR}/ectrans
+    ecbuild --prefix=${INSTALLDIR}/ectrans -Dfiat_ROOT=${INSTALLDIR}/fiat -DBUILD_SHARED_LIBS=OFF -DENABLE_FFTW=OFF -DENABLE_GPU=ON -DENABLE_OMPGPU=OFF -DENABLE_ACCGPU=ON -DENABLE_TESTS=OFF -DENABLE_GPU_AWARE_MPI=ON -DENABLE_CPU=ON -DENABLE_ETRANS=ON ${SOURCEDIR}/ectrans
     make -j32
 	make -j32   # note: dependencies aren't worked out entirely correctly by cmake, therefore a second make is necessary.
     make install
@@ -35,6 +35,24 @@ Recompile/run with
 Note: recompiling like this may not be sufficient when modifying e.g. hip.cc files; do a full recompilation (above) in this case.
 
 Note: a bug still resides in the global gpu runs when setting nfld>1.
+
+### Test run on multiple GPUs
+
+Allocate GPU resources with
+
+    salloc --nodes=1 --ntasks-per-node=8 --gpus-per-node=8 --account=project_462000140 --partition=standard-g --time=04:00:00 --mem=0
+
+Make sure to set
+
+    export MPICH_GPU_SUPPORT_ENABLED=1
+	CPU_BIND="map_cpu:48,56,16,24,1,8,32,40"
+
+Then launch with
+	
+	srun --cpu-bind=${CPU_BIND} ./select_gpu ./ectrans-benchmark -v
+
+The `select_gpu` wrapper can be found on the lumi documentation pages.
+
 
 ## Prerequisites: ecbuild and fiat
 

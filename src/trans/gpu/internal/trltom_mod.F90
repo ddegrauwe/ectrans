@@ -146,6 +146,8 @@ MODULE TRLTOM_MOD
       CALL GSTATS(420,1)
     ENDIF
 
+! daand: I believe this fix was for NVIDIA, but it's not necessary on lumi
+#ifdef gnarls
     ! copy to self workaround
     IRANK = MPL_MYRANK(MPL_ALL_MS_COMM)
     IF (ILENS(IRANK) .ne. ILENR(IRANK)) THEN
@@ -175,6 +177,7 @@ MODULE TRLTOM_MOD
         ILENS(IRANK) = 0
         ILENR(IRANK) = 0
     ENDIF
+#endif
 
     CALL GSTATS(411,0)
 #ifdef ACCGPU
@@ -196,9 +199,9 @@ MODULE TRLTOM_MOD
 #endif
     CALL GSTATS(411,1)
 #ifdef ACCGPU
-    !$ACC WAIT(1)
+    !!!$ACC WAIT(1)
 #endif
-    !$OMP BARRIER
+    !!!$OMP BARRIER
 
     CALL MPI_BARRIER(MPI_COMM_WORLD,IERROR)
     CALL GSTATS(806,1)

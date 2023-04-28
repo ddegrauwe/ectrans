@@ -93,9 +93,37 @@ IRLEN=R%NDGL+R%NNOEXTZG
 ICLEN=RALD%NDGLSUR+R%NNOEXTZG
 JLOT=UBOUND(PFFT,2)*UBOUND (PFFT,3)
 
+IF (JLOT==0) THEN
+  write (*,*) __FILE__, __LINE__
+  write (*,*) 'N = ',IRLEN
+  write (*,*) 'lot = ',JLOT
+  IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',1,ZHOOK_HANDLE)
+  RETURN
+ENDIF
+
 CALL CREATE_PLAN_FFT(IPLAN_C2R,1,IRLEN,JLOT,LDNONSTRIDED=.TRUE.)
 
+! !$acc data present(PFFT)
+! !$acc update host(PFFT)
+! !$acc end data
+! write (*,*) __FILE__, __LINE__
+! write (*,*) 'N = ',IRLEN
+! write (*,*) 'lot = ',JLOT
+! write (*,*) 'shape(PFFT) = ',shape(PFFT)
+! write (*,*) 'FFTH INPUT:'
+! write (*,*) PFFT
+! call flush(6)
+
 CALL EXECUTE_PLAN_FFT(1,IRLEN,PFFT(1,1,1),PFFT(1,1,1),IPLAN_C2R)
+
+! !$acc data present(PFFT)
+! !$acc update host(PFFT)
+! !$acc end data
+! write (*,*) __FILE__, __LINE__
+! write (*,*) 'FFTH OUTPUT:'
+! write (*,*) PFFT
+! call flush(6)
+
 
 #ifdef HAVE_CUFFT
 CALL CREATE_PLAN_FFT (IPLAN_C2R, +1, KN=IRLEN, KLOT=UBOUND (PFFT,2)*UBOUND (PFFT, 3), &
