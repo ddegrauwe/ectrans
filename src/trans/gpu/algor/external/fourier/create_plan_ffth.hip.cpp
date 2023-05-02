@@ -131,6 +131,7 @@ if (NONSTRIDED==0) {
 	rdist=N+2;
 }
 
+/*******
 printf("CreatePlan hipfft for %s %d \n","N=",N);
 //printf("%s %d \n","plan=",plan);
 printf("%s %d \n","LOT=",LOT);
@@ -139,6 +140,7 @@ printf("%s %d \n","rdist=",rdist);
 printf("%s %d \n","cdist=",cdist);
 printf("%s %d \n","ISIGN=",ISIGN);
 printf("%s %d \n","N=",N);
+******/
 
 hipfftSafeCall(hipfftCreate(*plan));
 

@@ -34,16 +34,14 @@ endif()
 foreach( prec sp dp )
   if( HAVE_${prec} )
     if ( HAVE_CPU )
-		if ( prec STREQUAL sp )		# daand: dirty hack to avoid linking global + double precision, which doesn't work
-			ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
-                          SOURCES ectrans-benchmark.F90
-                          LINKER_LANGUAGE Fortran
-                          LIBS
-                            trans_${prec}
-                            fiat
-                            parkind_${prec}
-                          )
-		endif()
+      ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
+				  SOURCES ectrans-benchmark.F90
+				  LINKER_LANGUAGE Fortran
+				  LIBS
+					trans_${prec}
+					fiat
+					parkind_${prec}
+				  )
       if ( HAVE_ETRANS )
         ecbuild_add_executable(TARGET  ectrans-lam-benchmark-${prec}
                             SOURCES ectrans-lam-benchmark.F90
@@ -61,7 +59,6 @@ foreach( prec sp dp )
     if( HAVE_GPU )
       foreach( gpumethod acc omp )
         if( HAVE_${gpumethod} )
-		  if ( prec STREQUAL sp )		# daand: dirty hack to avoid linking global + double precision, which doesn't work
 			if( gpumethod STREQUAL acc )
 				ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}-${gpumethod}
                                   SOURCES ectrans-benchmark.F90
@@ -89,7 +86,6 @@ foreach( prec sp dp )
 						
 		    target_link_options   ( ectrans-benchmark-gpu-${prec}-${gpumethod} INTERFACE "$<$<LINK_LANG_AND_ID:Fortran,NVHPC>:${${gpumethod}_link_flags}>" )
    		    target_compile_options( ectrans-benchmark-gpu-${prec}-${gpumethod} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${${gpumethod}_flags}>)
-		  endif()
 		  
           if ( HAVE_ETRANS )
 
