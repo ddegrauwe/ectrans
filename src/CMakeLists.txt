@@ -6,9 +6,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-message("HAVE_GPU = ${HAVE_GPU}")
-message("HAVE_CPU = ${HAVE_CPU}")
-
 add_subdirectory( trans )
 add_subdirectory( programs )
 if( HAVE_TRANSI )

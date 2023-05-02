@@ -133,10 +133,18 @@ for (int i = 0; i < device_count; ++i) {
 }*/
 
 if( ISIGN== -1 ){
+#ifdef TRANS_SINGLE
   hipfftSafeCall(hipfftExecR2C(plan, (HIP_DATA_TYPE_REAL*)data_in, data_out));
+#else
+  hipfftSafeCall(hipfftExecD2Z(plan, (HIP_DATA_TYPE_REAL*)data_in, data_out));
+#endif	
 }
 else if( ISIGN== 1){
+#ifdef TRANS_SINGLE
   hipfftSafeCall(hipfftExecC2R(plan, data_in, (HIP_DATA_TYPE_REAL*)data_out));
+#else
+  hipfftSafeCall(hipfftExecZ2D(plan, data_in, (HIP_DATA_TYPE_REAL*)data_out));
+#endif	
 }
 else {
   abort();

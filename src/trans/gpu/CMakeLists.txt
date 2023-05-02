@@ -58,7 +58,7 @@ ecbuild_list_add_pattern( LIST trans_hip_src
                 set_source_files_properties( ${trans_hip_src} PROPERTIES COMPILE_FLAGS "--offload-arch=gfx90a -x hip" )
 
 
-foreach( prec sp )
+foreach( prec sp dp )
   if( HAVE_${prec} )
     foreach( gpumethod acc omp)
       if( HAVE_${gpumethod})

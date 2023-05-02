@@ -1,4 +1,4 @@
-foreach( prec sp )
+foreach( prec sp dp )
 
 if ( HAVE_CPU )
 
@@ -20,7 +20,7 @@ if ( HAVE_CPU )
 endif() # HAVE_CPU
 
 if ( HAVE_GPU )
-
+	if ( HAVE_${prec} )
       foreach( gpumethod acc )
         if( HAVE_${gpumethod} )
           if( gpumethod STREQUAL acc )
@@ -56,7 +56,7 @@ if ( HAVE_GPU )
 
         endif()
       endforeach()
-
+	endif() # HAVE_${prec}
 endif() # HAVE_GPU
 
 endforeach() # prec 
