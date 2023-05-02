@@ -45,14 +45,23 @@ Allocate GPU resources with
 Make sure to set
 
     export MPICH_GPU_SUPPORT_ENABLED=1
-	CPU_BIND="map_cpu:48,56,16,24,1,8,32,40"
+    CPU_BIND="map_cpu:48,56,16,24,1,8,32,40"
 
-Then launch with
+Then launch global cpu/gpu runs with
 	
-	srun --cpu-bind=${CPU_BIND} ./select_gpu ./ectrans-benchmark -v
+    args="--truncation 79 --nproma 32 --vordiv --scders --uvders --nfld 1 --nlev 10 --norms --check 10"
+    srun --cpu-bind=${CPU_BIND} ./select_gpu ${INSTALLDIR}/ectrans/bin/ectrans-benchmark-sp  ${args}
+    srun --cpu-bind=${CPU_BIND} ./select_gpu ${INSTALLDIR}/ectrans/bin/ectrans-benchmark-gpu-sp-acc ${args}
+
+while the LAM cases are launched with
+
+    args="--nlon 256 --nlat 256 --nproma 32 --niter 1 --vordiv --scders --uvders --nfld 5 --nlev 80 --norms --check 10 --dump-values"
+    srun --cpu-bind=${CPU_BIND} ./select_gpu ${INSTALLDIR}/ectrans/bin/ectrans-lam-benchmark-sp ${args}
+    srun --cpu-bind=${CPU_BIND} ./select_gpu ${INSTALLDIR}/ectrans/bin/ectrans-lam-benchmark-gpu-sp-acc ${args}
 
 The `select_gpu` wrapper can be found on the lumi documentation pages.
 
+Small note: the `nfld>1` case gives a crash in the global run, both on cpu and on gpu.
 
 ## Prerequisites: ecbuild and fiat
 
