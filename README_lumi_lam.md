@@ -102,50 +102,50 @@ Just for reference: a somewhat simplified overview of routines and data layout
 
 Inverse transforms:
 ```
-    einv_trans                 # input: PSPVOR(NLEV,NSPEC2), PSPDIV(NLEV,NSPEC2), PSPSC3A(NFLD*NLEV,NSPEC2)
-      einv_trans_ctl
-        eltinv_ctl
-          DO JM=1,NX_l       # loop over x-wavenumbers
-            eltinv             # north-south transforms
-              eprfi1b          # transpose to (NY,NFLD)
-              eleinv
-                plan_fft
-                execute_fft    # small-batched transform along y with stride=1, distance=ny+2, lot=nfld
-              easre1b          # transpose to FOUBUF_IN(NFLD,NY)
-          ENDDO
-          trmtol               # inter-GPU communications to FOUBUF(NFLD,NY)
-          
-        eftinv_ctl
-          DO JGL=1,NY_l   # loop over latitudes
-            fourier_in         # copy FOUBUF to ZGTF(NFLD,NX,JGL)
-            eftinv
-              plan_fft
-              execute_fft      # small-batched transform along x with stride=nfld,distance=1, lot=NFLD
-          ENDDO
-          trltog               # inter-GPU comms and transpose to PGP3A(NPROMA,NLEV*NFLD,NBLK),PGPUV(NPROMA,NLEV*2,NBLK)
+einv_trans                 # input: PSPVOR(NLEV,NSPEC2), PSPDIV(NLEV,NSPEC2), PSPSC3A(NFLD*NLEV,NSPEC2)
+  einv_trans_ctl
+    eltinv_ctl
+      DO JM=1,NX_l         # loop over x-wavenumbers
+        eltinv             # north-south transforms
+          eprfi1b          # transpose to (NY,NFLD)
+          eleinv
+            plan_fft
+            execute_fft    # small-batched transform along y with stride=1, distance=ny+2, lot=nfld
+          easre1b          # transpose to FOUBUF_IN(NFLD,NY)
+      ENDDO
+      trmtol               # inter-GPU communications to FOUBUF(NFLD,NY)
+      
+    eftinv_ctl
+      DO JGL=1,NY_l        # loop over latitudes
+        fourier_in         # copy FOUBUF to ZGTF(NFLD,NX,JGL)
+        eftinv
+          plan_fft
+          execute_fft      # small-batched transform along x with stride=nfld,distance=1, lot=NFLD
+      ENDDO
+      trltog               # inter-GPU comms and transpose to PGP3A(NPROMA,NLEV*NFLD,NBLK),PGPUV(NPROMA,NLEV*2,NBLK)
 ```
 
 Direct transforms:
 ```
-    edir_trans_ctl            # input PGP3A(NPROMA,NFLD*NLEV,NBLK)
-      eftdir_ctl
-        trgtol                # inter-GPU comms and transposition to ZGTF(NFLD,NX)
-        DO JGL=1,NY_l    # loop over latitudes
-          ftdir
-            plan_fft
-            execute_fft       # batched transform along x with stride=NFLD, distance=1, lot=NFLD
-          fourier_out         # copy to FOUBUF_IN(NFLD,NX)
-        ENDDO
-      eltdir_ctl
-        trltom                # inter-GPU comms to FOUBUF(NFLD,NY)
-        DO JM=1,NX_l        # loop over x-wavenumbers
-          eltdir
-            eprfi2b           # transpose to PFFT(NY,NFLD)
-            eledir
-              plan_fft
-              execute_fft     # batched transform along y with stride=1, distance=ny+2, lot=NFLD
-        eupdsp
-          eupdspb             # transpose to PSPSC3A(NFLD,NSPEC2)
+edir_trans_ctl            # input PGP3A(NPROMA,NLEV,NFLD,NBLK)
+  eftdir_ctl
+    trgtol                # inter-GPU comms and transposition to ZGTF(NFLD,NX)
+    DO JGL=1,NY_l         # loop over latitudes
+      ftdir
+        plan_fft
+        execute_fft       # batched transform along x with stride=NFLD, distance=1, lot=NFLD
+      fourier_out         # copy to FOUBUF_IN(NFLD,NX)
+    ENDDO
+  eltdir_ctl
+    trltom                # inter-GPU comms to FOUBUF(NFLD,NY)
+    DO JM=1,NX_l          # loop over x-wavenumbers
+      eltdir
+        eprfi2b           # transpose to PFFT(NY,NFLD)
+        eledir
+          plan_fft
+          execute_fft     # batched transform along y with stride=1, distance=ny+2, lot=NFLD
+    eupdsp
+      eupdspb             # transpose to PSPSC3A(NFLD,NSPEC2)
 ```
 
 Two aspects of this code and data organization are quite striking: (i) 2x3 transpositions are performed. On CPU this doesn't seem to be very expensive; (ii) the Fourier transforms are performed inside loops over JGL and JM. This means that the batch size of the transforms is quite limited.
@@ -156,43 +156,43 @@ To unleash the computing power of GPUs, as much as possible parallellism should 
 
 Inverse transforms:
 ```
-    einv_trans               # input: PSPVOR(NLEV,NSPEC2), PSPDIV(NLEV,NSPEC2), PSPSC3A(NFLD*NLEV,NSPEC2)
-      einv_trans_ctl
-        eltinv_ctl
-          eltinv             # north-south transforms
-            eprfi1b          # transpose to (NY,NFLD)
-            eleinv
-              plan_fft
-              execute_fft    # batched transform along y with stride=1, distance=ny+2
-            easre1b          # transpose to FOUBUF_IN(NFLD,NY)
-          trmtol             # inter-GPU communications to FOUBUF(NFLD,NY)
-          
-        eftinv_ctl
-          efourier_in        # transpose FOUBUF to ZGTF(NX,NFLD)
-          eftinv
-            plan_fft
-            execute_fft      # batched transform along x with stride=1,distance=nx+2
-          trltog             # inter-GPU comms to PGP3A(NPROMA,NLEV*NFLD,NBLK),PGPUV(NPROMA,NLEV*2,NBLK)
+einv_trans               # input: PSPVOR(NLEV,NSPEC2), PSPDIV(NLEV,NSPEC2), PSPSC3A(NFLD*NLEV,NSPEC2)
+  einv_trans_ctl
+    eltinv_ctl
+      eltinv             # north-south transforms
+        eprfi1b          # transpose to (NY,NFLD)
+        eleinv
+          plan_fft
+          execute_fft    # batched transform along y with stride=1, distance=ny+2
+        easre1b          # transpose to FOUBUF_IN(NFLD,NY)
+      trmtol             # inter-GPU communications to FOUBUF(NFLD,NY)
+      
+    eftinv_ctl
+      efourier_in        # transpose FOUBUF to ZGTF(NX,NFLD)
+      eftinv
+        plan_fft
+        execute_fft      # batched transform along x with stride=1,distance=nx+2
+      trltog             # inter-GPU comms to PGP3A(NPROMA,NLEV*NFLD,NBLK),PGPUV(NPROMA,NLEV*2,NBLK)
 ```
 
 Direct transforms:
 ```
-    edir_trans_ctl           # input PGP3A(NPROMA,NFLD*NLEV,NBLK)
-      eftdir_ctl
-        trgtol               # inter-GPU comms to ZGTF(NX,NY_l*NFLD)
-        eftdir
-          plan_fft
-          execute_fft        # batched transform along x with stride=1, distance=nx+2, lot=NY_l*NFLD
-        efourier_out         # transpose to FOUBUF_IN(NFLD,NY_l,NX)
-      eltdir_ctl
-        trltom               # inter-GPU comms to FOUBUF(NFLD*NX_l,NY)
-        eltdir
-          eprfi2b            # transpose to PFFT(NY,NX_l*NFLD)
-          eledir
-            plan_fft
-            execute_fft      # batched transform along y with stride=1, distance=ny+2, lot=NX_l*NFLD
-        eupdsp
-          eupdspb            # transpose to PSPSC3A(NFLD,NSPEC2)
+edir_trans_ctl           # input PGP3A(NPROMA,NFLD*NLEV,NBLK)
+  eftdir_ctl
+    trgtol               # inter-GPU comms to ZGTF(NX,NY_l*NFLD)
+    eftdir
+      plan_fft
+      execute_fft        # batched transform along x with stride=1, distance=nx+2, lot=NY_l*NFLD
+    efourier_out         # transpose to FOUBUF_IN(NFLD,NY_l,NX)
+  eltdir_ctl
+    trltom               # inter-GPU comms to FOUBUF(NFLD*NX_l,NY)
+    eltdir
+      eprfi2b            # transpose to PFFT(NY,NX_l*NFLD)
+      eledir
+        plan_fft
+        execute_fft      # batched transform along y with stride=1, distance=ny+2, lot=NX_l*NFLD
+    eupdsp
+      eupdspb            # transpose to PSPSC3A(NFLD,NSPEC2)
 ```
 
 Although the number of transpositions remains the same (2x3), they are performed at a different place. This is necessary because a batched Fourier transform must be performed either on the first dimension, or on the last dimension. As a consequence, the input to `trltog` and the output from `trgtol` is transposed w.r.t. the CPU version and a nasty switch `LDTRANSPOSED` is necessary in those routines.
