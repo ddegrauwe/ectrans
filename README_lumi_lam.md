@@ -292,6 +292,12 @@ However, looking inside the code deeper, it becomes apparent that calculations o
 
 Completely symmetric actions could be taken for the input data of the inverse transforms in `eltinv`.
 
+### Merging small kernels
+
+The most costly kernel `EASRE1B` is way too small: it has an arithmetic intensity if 0.05, the GPU is starving and waiting all the time. We should try to merge the kernel with a larger routine, like what is done in the Nvidia optimized version. 
+The same holds for all the other small kernels (`fourier_in`, `fourier_out`, ...)
+
+
 ## History
 
 ### Different existing repositories contain elements for this:
