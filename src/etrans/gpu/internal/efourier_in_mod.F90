@@ -44,30 +44,50 @@ REAL(KIND=JPRBT), INTENT(OUT) :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: JM, JF, IGLG, IPROC, IR, II, ISTA
 INTEGER(KIND=JPIM) :: IOFF, JGL
+INTEGER(KIND=JPIM) :: IBEG,IEND,IINC
+INTEGER(KIND=JPIM) :: JF_MAX,JGL_MAX
+INTEGER(KIND=JPIM) :: IOFF_LAT,OFFSET_VAR
+INTEGER(KIND=JPIM) :: OFFSET_ISTA
 
-!     ------------------------------------------------------------------
+IF(MYPROC > NPROC/2)THEN
+   IBEG=1
+   IEND=D%NDGL_FS
+   IINC=1
+ ELSE
+   IBEG=D%NDGL_FS
+   IEND=1
+   IINC=-1
+ ENDIF
+
+JF_MAX=SIZE(PREEL,2)
+JGL_MAX=SIZE(PREEL,1)
 
 !$acc data &
-!$acc& copyin(D_NPTRLS,D_NSTAGTF,D_MSTABF,D_NSTAGT0B,D_NPNTGTB0,G_NMEN,G_NMEN_MAX,D_NPROCM) &
+!$acc& PRESENT(D_NPTRLS,D_NSTAGTF,D_MSTABF,D_NSTAGT0B,D_NPNTGTB0,G_NMEN,G_NMEN_MAX,D_NPROCM) &
 !$acc& present(PREEL,FOUBUF)
 
 !$acc kernels
-DO JF=1,SIZE(PREEL,2)
-  DO JGL=1,SIZE(PREEL,1)
+DO JF=1,JF_MAX
+  DO JGL=1,JGL_MAX
     PREEL(JGL,JF)=0._JPRBT
   ENDDO
 ENDDO
 !$acc end kernels
+ 
+!     ------------------------------------------------------------------
 
-!$acc parallel loop collapse(3) private(IGLG,IPROC,ISTA,IOFF)
-DO JGL = 1, D%NDGL_FS
-   DO JM=0,G_NMEN_MAX      
-      DO JF=1,KFIELDS     
-         IGLG = D_NPTRLS(MYSETW)+JGL-1
-         IF ( JM .LE. G_NMEN(IGLG)) THEN
-            IPROC = D_NPROCM(JM)
-            ISTA  = (D_NSTAGT0B(D_MSTABF(IPROC))+D_NPNTGTB0(JM,JGL))*2*KFIELDS
+OFFSET_VAR=D%NPTRLS(MYSETW)
+IPROC = D_NPROCM(0)
+OFFSET_ISTA = (D_NSTAGT0B(D_MSTABF(IPROC)))
+
+!$acc parallel loop collapse(3) private(IGLG,IPROC,ISTA,IOFF) 
+DO JGL=IBEG,IEND,IINC
+   DO JF=1,KFIELDS     
+     DO JM=0,G_NMEN_MAX
+         IGLG    = OFFSET_VAR+JGL-1         
+         IF ( JM .LE. G_NMEN(IGLG)) THEN            
             IOFF  = 1+D_NSTAGTF(JGL)
+            ISTA  = (OFFSET_ISTA+D_NPNTGTB0(JM,JGL))*2*KFIELDS            
             PREEL(IOFF+2*JM+0,JF) = FOUBUF(ISTA+2*JF-1) 
             PREEL(IOFF+2*JM+1,JF) = FOUBUF(ISTA+2*JF  ) 
          END IF

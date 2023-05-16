@@ -337,21 +337,21 @@ endif
 
 if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 
-call gstats(1, 0)
+if( lstats ) call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
   &               kmax_resol=nmax_resol, kpromatr=0, kprgpns=nprgpns, kprgpew=nprgpew, &
   &               kprtrw=nprtrw, kcombflen=ncombflen, ldsync_trans=lsync_trans,               &
   &               ldalloperm=.true., ldmpoff=.not.luse_mpi)
-call gstats(1, 1)
+  if( lstats ) call gstats(1, 1)
 
-call gstats(2, 0)
+  if( lstats ) call gstats(2, 0)
 zexwn=1._jprb  ! 2*pi/(nx*dx): spectral resolution
 zeywn=1._jprb  ! 2*pi/(ny*dy)
 nloen=nlon
 call esetup_trans(ksmax=nsmax, kmsmax=nmsmax, kdgl=nlat, kdgux=nlat, kloen=nloen, ldsplit=.true.,          &
   &                 ldusefftw=lfftw,pexwn=zexwn,peywn=zeywn)
 
-call gstats(2, 1)
+  if( lstats ) call gstats(2, 1)
 
 call etrans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
 
@@ -574,7 +574,7 @@ ztloop = timef()
 !===================================================================================================
 
 do jstep = 1, iters
-  call gstats(3,0)
+  if( lstats ) call gstats(3,0)
   ztstep(jstep) = timef()
 
   !=================================================================================================
@@ -582,7 +582,7 @@ do jstep = 1, iters
   !=================================================================================================
 
   ztstep1(jstep) = timef()
-  call gstats(4,0)
+  if( lstats ) call gstats(4,0)
   if (lvordiv) then
 
     call einv_trans(kresol=1, kproma=nproma, &
@@ -616,7 +616,7 @@ do jstep = 1, iters
 
   endif
   
-  call gstats(4,1)
+  if( lstats ) call gstats(4,1)
 
   ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
 
@@ -640,7 +640,9 @@ do jstep = 1, iters
 
   ztstep2(jstep) = timef()
 
-  call gstats(5,0)
+  if( lstats ) call gstats(5,0)
+  
+
   if (lvordiv) then
     call edir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgp2(:,1:1,:),                &
@@ -665,11 +667,10 @@ do jstep = 1, iters
       & kvsetsc2=ivsetsc,                   &
       & kvsetsc3a=ivset)
   endif
-  call gstats(5,1)
+  if( lstats ) call gstats(5,1)
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
 
-
-	!=================================================================================================
+  !=================================================================================================
 	! Dump the values to disk, for debugging only
 	!=================================================================================================
 
@@ -706,7 +707,7 @@ do jstep = 1, iters
   !=================================================================================================
 
   if (lprint_norms) then
-    call gstats(6,0)
+    if( lstats ) call gstats(6,0)
     call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
@@ -735,15 +736,14 @@ do jstep = 1, iters
 		  zerr(4) = abs(znormt(ifld)/znormt0(ifld) - 1.0_jprb)
 		  zmaxerr(4) = max(zmaxerr(4), zerr(4))
 		enddo
-		write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-					& " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
-					&  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
-    endif
-	call gstats(6,1)
+    write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
+                & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
+                &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
+    if( lstats )call gstats(6,1)
   else
     write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
   endif
-  call gstats(3,1)
+  if( lstats ) call gstats(3,1)
 
 enddo
 
@@ -913,7 +913,7 @@ endif
 
 !===================================================================================================
 
-if (lstats) then
+if (lstats) then  
   call gstats(0,1)
   call gstats_print(nout, zaveave, jpmaxstat)
 endif
