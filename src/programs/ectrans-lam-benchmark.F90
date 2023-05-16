@@ -712,7 +712,7 @@ do jstep = 1, iters
     call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
     call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
-	
+  
 	if ( myproc == 1 ) then
 
 		! Surface pressure
@@ -743,6 +743,9 @@ do jstep = 1, iters
   else
     write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
   endif
+
+	endif
+
   if( lstats ) call gstats(3,1)
 
 enddo
