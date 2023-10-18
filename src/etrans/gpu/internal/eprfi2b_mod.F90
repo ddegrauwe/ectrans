@@ -83,8 +83,8 @@ IF (LHOOK) CALL DR_HOOK('EPRFI2B_MOD:EPRFI2B',0,ZHOOK_HANDLE)
 !loop over wavenumber
 !$acc parallel loop collapse(3) private(ISTAN,IM,IJR,IJI,JM)
 DO JM = 1, D_NUMP
-  DO JGL=1,R_NDGL
-    DO JF =1,KFIELD
+  DO JF =1,KFIELD
+    DO JGL=1,R_NDGL
       IM = D_MYMS(JM)
       IJR = 2*(JF-1)+1
       IJI = IJR+1

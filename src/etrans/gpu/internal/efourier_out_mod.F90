@@ -46,26 +46,22 @@ INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS
 INTEGER(KIND=JPIM) :: JGL
 INTEGER(KIND=JPIM) :: JM, JF, IGLG, IPROC, IR, II, ISTA, JMMAX
 INTEGER(KIND=JPIM) :: IOFF
-INTEGER(KIND=JPIM) :: OFFSET_VAR,OFFSET_ISTA
 
 !     ------------------------------------------------------------------
-OFFSET_VAR=D%NPTRLS(MYSETW)
-IPROC = D_NPROCM(0)
-OFFSET_ISTA = D_NSTAGT1B(D_MSTABF(IPROC))
 
 !$acc data &
 !$acc& copy(D_NPTRLS,D_NSTAGTF,D_MSTABF,D_NSTAGT1B,D_NPNTGTB0,G_NMEN,G_NMEN_MAX,D_NPROCM) &
 !$acc& present(PREEL,FOUBUF_IN)
 
-!$acc parallel loop private(IGLG,JMMAX,IPROC,ISTA,IOFF) &
-!$ACC& TILE(32,16,1)
+!$acc parallel loop collapse(3) private(IGLG,JMMAX,IPROC,ISTA,IOFF)
 DO JGL = 1, D%NDGL_FS
-   DO JM=0,G_NMEN_MAX            
-      DO JF=1,KFIELDS      
-         IGLG = OFFSET_VAR+JGL-1
+   DO JM=0,G_NMEN_MAX      
+      DO JF=1,KFIELDS
+         IGLG = D_NPTRLS(MYSETW)+JGL-1
          JMMAX = G_NMEN(IGLG)
-         IF (JM .LE. JMMAX) THEN            
-            ISTA  = (OFFSET_ISTA+D_NPNTGTB0(JM,JGL))*2*KFIELDS
+         IF (JM .LE. JMMAX) THEN
+            IPROC = D_NPROCM(JM)
+            ISTA  = (D_NSTAGT1B(D_MSTABF(IPROC))+D_NPNTGTB0(JM,JGL))*2*KFIELDS
             IOFF  = 1+D_NSTAGTF(JGL)
             FOUBUF_IN(ISTA+2*JF-1) = PREEL(IOFF+2*JM+0,JF)
             FOUBUF_IN(ISTA+2*JF  ) = PREEL(IOFF+2*JM+1,JF)
