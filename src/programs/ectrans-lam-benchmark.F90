@@ -42,6 +42,7 @@ program ectrans_lam_benchmark
 
 use parkind1, only: jpim, jprb, jprd
 use oml_mod ,only : oml_max_threads
+use omp_lib, only: omp_get_wtime
 use mpl_module
 use yomgstats, only: jpmaxstat
 use yomhook, only : dr_hook_init
@@ -84,7 +85,7 @@ integer(kind=jpim), allocatable :: nprcids(:)
 integer(kind=jpim) :: myproc, jj
 integer :: jstep
 
-real(kind=jprd) :: ztinit, ztloop, timef, ztstepmax, ztstepmin, ztstepavg, ztstepmed
+real(kind=jprd) :: ztinit, ztloop, ztstepmax, ztstepmin, ztstepavg, ztstepmed
 real(kind=jprd) :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
 real(kind=jprd) :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
 real(kind=jprd), allocatable :: ztstep(:), ztstep1(:), ztstep2(:)
@@ -167,7 +168,7 @@ integer(kind=jpim) :: nflevl
 
 ! sumpini
 integer(kind=jpim) :: isqr
-logical :: lsync_trans = .true. ! Activate barrier sync
+logical :: lsync_trans = .false. ! Activate barrier sync
 
 
 integer(kind=jpim) :: nproma = 0
@@ -242,7 +243,7 @@ call dr_hook_init()
 !===================================================================================================
 
 if( lstats ) call gstats(0,0)
-ztinit = timef()
+ztinit = omp_get_wtime()
 
 ! only output to stdout on pe 1
 !if (nproc > 1) then
@@ -525,7 +526,7 @@ endif
 ! Setup timers
 !===================================================================================================
 
-ztinit = (timef() - ztinit)/1000.0_jprd
+ztinit = (omp_get_wtime() - ztinit)
 
 if (verbosity >= 0) then
   write(nout,'(" ")')
@@ -567,7 +568,7 @@ endif
 write(nout,'(a)') '======= Start of spectral transforms  ======='
 write(nout,'(" ")')
 
-ztloop = timef()
+ztloop = omp_get_wtime()
 
 !===================================================================================================
 ! Do spectral transform loop
@@ -575,13 +576,13 @@ ztloop = timef()
 
 do jstep = 1, iters
   if( lstats ) call gstats(3,0)
-  ztstep(jstep) = timef()
+  ztstep(jstep) = omp_get_wtime()
 
   !=================================================================================================
   ! Do inverse transform
   !=================================================================================================
 
-  ztstep1(jstep) = timef()
+  ztstep1(jstep) = omp_get_wtime()
   if( lstats ) call gstats(4,0)
   if (lvordiv) then
 
@@ -618,7 +619,7 @@ do jstep = 1, iters
   
   if( lstats ) call gstats(4,1)
 
-  ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
+  ztstep1(jstep) = (omp_get_wtime() - ztstep1(jstep))
 
   !=================================================================================================
   ! While in grid point space, dump the values to disk, for debugging only
@@ -627,10 +628,10 @@ do jstep = 1, iters
   if (ldump_values) then
     ! dump a field to a binary file
     call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgp2(:,1,:),         'S', noutdump)
-	if (lvordiv) then
-      call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgpuv(:,nflevg,1,:), 'U', noutdump)
-      call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgpuv(:,nflevg,2,:), 'V', noutdump)
-	endif
+    if (lvordiv) then
+        call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgpuv(:,nflevg,1,:), 'U', noutdump)
+        call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgpuv(:,nflevg,2,:), 'V', noutdump)
+    endif
     call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgp3a(:,nflevg,1,:), 'T', noutdump)
   endif
   
@@ -638,7 +639,7 @@ do jstep = 1, iters
   ! Do direct transform
   !=================================================================================================
 
-  ztstep2(jstep) = timef()
+  ztstep2(jstep) = omp_get_wtime()
 
   if( lstats ) call gstats(5,0)
   
@@ -668,7 +669,7 @@ do jstep = 1, iters
       & kvsetsc3a=ivset)
   endif
   if( lstats ) call gstats(5,1)
-  ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
+  ztstep2(jstep) = (omp_get_wtime() - ztstep2(jstep))
 
   !=================================================================================================
 	! Dump the values to disk, for debugging only
@@ -688,7 +689,7 @@ do jstep = 1, iters
   ! Calculate timings
   !=================================================================================================
 
-  ztstep(jstep) = (timef() - ztstep(jstep))/1000.0_jprd
+  ztstep(jstep) = (omp_get_wtime() - ztstep(jstep))
 
   ztstepavg = ztstepavg + ztstep(jstep)
   ztstepmin = min(ztstep(jstep), ztstepmin)
@@ -713,36 +714,36 @@ do jstep = 1, iters
     call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
     call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
   
-	if ( myproc == 1 ) then
+    if ( myproc == 1 ) then
 
-		! Surface pressure
-		zmaxerr(:) = -999.0
-		do ifld = 1, 1
-		  zerr(1) = abs(znormsp(ifld)/znormsp0(ifld) - 1.0_jprb)
-		  zmaxerr(1) = max(zmaxerr(1), zerr(1))
-		enddo
-		! Divergence
-		do ifld = 1, nflevg
-		  zerr(2) = abs(znormdiv(ifld)/znormdiv0(ifld) - 1.0_jprb)
-		  zmaxerr(2) = max(zmaxerr(2), zerr(2))
-		enddo
-		! Vorticity
-		do ifld = 1, nflevg
-		  zerr(3) = abs(znormvor(ifld)/znormvor0(ifld) - 1.0_jprb)
-		  zmaxerr(3) = max(zmaxerr(3),zerr(3))
-		enddo
-		! Temperature
-		do ifld = 1, nflevg
-		  zerr(4) = abs(znormt(ifld)/znormt0(ifld) - 1.0_jprb)
-		  zmaxerr(4) = max(zmaxerr(4), zerr(4))
-		enddo
-    write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
-                &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
-    if( lstats )call gstats(6,1)
-  else
-    write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
-  endif
+      ! Surface pressure
+      zmaxerr(:) = -999.0
+      do ifld = 1, 1
+        zerr(1) = abs(znormsp(ifld)/znormsp0(ifld) - 1.0_jprb)
+        zmaxerr(1) = max(zmaxerr(1), zerr(1))
+      enddo
+      ! Divergence
+      do ifld = 1, nflevg
+        zerr(2) = abs(znormdiv(ifld)/znormdiv0(ifld) - 1.0_jprb)
+        zmaxerr(2) = max(zmaxerr(2), zerr(2))
+      enddo
+      ! Vorticity
+      do ifld = 1, nflevg
+        zerr(3) = abs(znormvor(ifld)/znormvor0(ifld) - 1.0_jprb)
+        zmaxerr(3) = max(zmaxerr(3),zerr(3))
+      enddo
+      ! Temperature
+      do ifld = 1, nflevg
+        zerr(4) = abs(znormt(ifld)/znormt0(ifld) - 1.0_jprb)
+        zmaxerr(4) = max(zmaxerr(4), zerr(4))
+      enddo
+      write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
+                  & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
+                  &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
+      if( lstats )call gstats(6,1)
+    else
+      write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
+    endif
 
 	endif
 
@@ -752,7 +753,7 @@ enddo
 
 !===================================================================================================
 
-ztloop = (timef() - ztloop)/1000.0_jprd
+ztloop = (omp_get_wtime() - ztloop)
 
 write(nout,'(" ")')
 write(nout,'(a)') '======= End of spectral transforms  ======='
@@ -1346,10 +1347,10 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
     close(noutdump)
     
     ! write to screen
-    !write(frmt(5:8),'(i4.4)') kgptotg/nlat
-    !write (*,*) fldchar,' at iteration ',jstep,':'
-    !write (*,frmt) fldg
-    !call flush(6)
+    write(frmt(5:8),'(i4.4)') kgptotg/nlat
+    write (*,*) fldchar,' at iteration ',jstep,':'
+    write (*,frmt) fldg
+    call flush(6)
 	
     deallocate(fldg)
   
@@ -1423,10 +1424,10 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
     close(noutdump)
     
     ! write to screen
-    !write(frmt(5:8),'(i4.4)') 2*(nmsmax+1)
-    !write (*,*) fldchar,' at iteration ',jstep,':'
-    !write (*,frmt) fld2g
-    !call flush(6)
+    write(frmt(5:8),'(i4.4)') 2*(nmsmax+1)
+    write (*,*) fldchar,' at iteration ',jstep,':'
+    write (*,frmt) fld2g
+    call flush(6)
 	
     deallocate(fldg)
   
