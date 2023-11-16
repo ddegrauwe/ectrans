@@ -301,6 +301,14 @@ INTEGER(KIND=JPIM) :: IREQ
 
 IF (LHOOK) CALL DR_HOOK('TRMTOL',0,ZHOOK_HANDLE)
 
+#ifdef gnarls
+write (20,*) __FILE__, __LINE__; call flush(20)
+write (20,*) 'PFBUF_IN = '; write (20,'(6E18.8)') PFBUF_IN(1:size(pfbuf_in,1))
+call flush(20)
+#endif
+
+! daand: initializing to fixed value for debugging; not necessary!
+PFBUF(:)=-1.
 
 ITAG = MTAGML
 
@@ -336,6 +344,12 @@ ELSE
   ENDDO
   CALL GSTATS(1608,1)
 ENDIF
+
+#ifdef gnarls
+write (20,*) __FILE__, __LINE__; call flush(20)
+write (20,*) 'PFBUF = '; write (20,'(6E18.8)') PFBUF(1:size(pfbuf,1))
+call flush(20)
+#endif
 
 IF (LHOOK) CALL DR_HOOK('TRMTOL',1,ZHOOK_HANDLE)
 

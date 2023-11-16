@@ -11,6 +11,7 @@ USE TPMALD_FIELDS   ,ONLY : FALD, FALD_RLEPINM
 USE TPMALD_GEO      ,ONLY : GALD
 USE TPMALD_DISTR    ,ONLY : DALD, DALD_NCPL2M, DALD_NPME
 USE TPM_DISTR       ,ONLY : D, D_NUMP, D_MYMS
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 !**** *VDTUV* - Compute U,V in  spectral space
 
@@ -83,10 +84,31 @@ INTEGER(KIND=JPIM) :: JNMAX
 REAL(KIND=JPRB) :: ZLEPINM
 REAL(KIND=JPRB) :: ZKM
 REAL(KIND=JPRB) :: ZIN
+
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 IF (LHOOK) CALL DR_HOOK('EVDTUV_MOD:EVDTUV',0,ZHOOK_HANDLE)
 
 JNMAX = MAXVAL (DALD%NCPL2M)
+
+! check if args are contiguous
+#ifndef gnarls
+write (20,*) 'shape(PVOR) = ', shape(PVOR)
+if (.not. is_contiguous(PVOR) ) call abort_trans('PVOR not contiguous')
+write (20,*) 'shape(PDIV) = ', shape(PDIV)
+if (.not. is_contiguous(PDIV) ) call abort_trans('PDIV not contiguous')
+write (20,*) 'shape(PU) = ', shape(PU)
+if (.not. is_contiguous(PU) ) call abort_trans('PU not contiguous')
+write (20,*) 'shape(PV) = ', shape(PV)
+if (.not. is_contiguous(PV) ) call abort_trans('PV not contiguous')
+if ( present(PSPMEANU) ) THEN
+  write (20,*) 'shape(PSPMEANU) = ', shape(PSPMEANU)
+  if (.not. is_contiguous(PSPMEANU) ) call abort_trans('PSPMEANU not contiguous')
+endif
+if ( present(PSPMEANV) ) THEN
+  write (20,*) 'shape(PSPMEANU) = ', shape(PSPMEANU)
+  if (.not. is_contiguous(PSPMEANV) ) call abort_trans('PSPMEANV not contiguous')
+endif
+#endif
 
 !$acc parallel loop collapse (3) private (JM, J, JN, IM, IN, ZIN) &
 !$acc & present (D_NUMP, D_MYMS, DALD_NCPL2M, PU, PV, PVOR, PDIV)

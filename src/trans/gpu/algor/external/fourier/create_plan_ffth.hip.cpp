@@ -60,17 +60,13 @@
 
     inline void __hipfftSafeCall(hipfftResult err, const char *file, const int line)
     {
-    if( HIPFFT_SUCCESS != err) {
-    fprintf(stderr, "HIPFFT error at 1\n");
-    fprintf(stderr, "HIPFFT error in file '%s'\n",__FILE__);
-    fprintf(stderr, "HIPFFT error at 2\n");
-    /*fprintf(stderr, "HIPFFT error line '%s'\n",__LINE__);*/
-    fprintf(stderr, "HIPFFT error at 3\n");
-    /*fprintf(stderr, "HIPFFT error in file '%s', line %d\n %s\nerror %d: %s\nterminating!\n",__FILE__, __LINE__,err, \
-    _hipGetErrorEnum(err)); \*/
-    fprintf(stderr, "HIPFFT error %d: %s\nterminating!\n",err,_hipGetErrorEnum(err)); \
-    hipDeviceReset(); return; \
-    }
+		if( HIPFFT_SUCCESS != err) {
+			fprintf(stderr, "HIPFFT error in file '%s', line %d; error %d: %s\nterminating!\n", \
+				__FILE__, __LINE__,err, \
+				_hipGetErrorEnum(err)); \
+			fprintf(stderr, "HIPFFT error %d: %s\nterminating!\n",err,_hipGetErrorEnum(err)); \
+			hipDeviceReset(); abort(); \
+		}
     }
 
 
@@ -131,16 +127,14 @@ if (NONSTRIDED==0) {
 	rdist=N+2;
 }
 
-/*******
-printf("CreatePlan hipfft for %s %d \n","N=",N);
-//printf("%s %d \n","plan=",plan);
-printf("%s %d \n","LOT=",LOT);
-printf("%s %d \n","stride=",stride);
-printf("%s %d \n","rdist=",rdist);
-printf("%s %d \n","cdist=",cdist);
-printf("%s %d \n","ISIGN=",ISIGN);
-printf("%s %d \n","N=",N);
-******/
+
+fprintf(stderr,"CreatePlan hipfft for \n");
+fprintf(stderr,"  %s %d \n","LOT=",LOT);
+fprintf(stderr,"  %s %d \n","stride=",stride);
+fprintf(stderr,"  %s %d \n","rdist=",rdist);
+fprintf(stderr,"  %s %d \n","cdist=",cdist);
+fprintf(stderr,"  %s %d \n","ISIGN=",ISIGN);
+fprintf(stderr,"  %s %d \n","N=",N);
 
 hipfftSafeCall(hipfftCreate(*plan));
 

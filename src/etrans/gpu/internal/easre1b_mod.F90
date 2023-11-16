@@ -73,7 +73,8 @@ IF (LHOOK) CALL DR_HOOK('EASRE1B_MOD:EASRE1B',0,ZHOOK_HANDLE)
 
 
 !$acc parallel loop collapse(3) private (JM, JGL, JFLD, IPROC, IISTAN) &
-!$acc& present (FOUBUF_IN, PFFT, D_NSTAGT0B, D_NPNTGTB1, D_NPROCL, D_NUMP, R_NDGL)
+!$acc& present (FOUBUF_IN, PFFT, D_NSTAGT0B, D_NPNTGTB1, D_NPROCL, D_NUMP, R_NDGL) &
+!$acc& copyin(KFIELD) default(none)
 DO JM = 1, D_NUMP  !100
   DO JGL=1,R_NDGL  !400
     DO JFLD  =1,2*KFIELD !500
@@ -84,6 +85,20 @@ DO JM = 1, D_NUMP  !100
   ENDDO
 ENDDO
 !$acc end parallel loop
+
+
+
+
+
+#ifdef gnarls
+!$acc data present(FOUBUF_IN)
+!$acc update host(FOUBUF_IN)
+write (20,*) __FILE__,__LINE__
+write (20,*) 'FOUBUF_IN = '
+write (20,'(6E18.8)') FOUBUF_IN
+call flush(20)
+!$acc end data
+#endif
 
 IF (LHOOK) CALL DR_HOOK('EASRE1B_MOD:EASRE1B',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------

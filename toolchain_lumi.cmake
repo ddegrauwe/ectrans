@@ -28,7 +28,7 @@ set( OpenMP_Fortran_FLAGS   "-fopenmp" CACHE STRING "" )
 set( ENABLE_ACC ON CACHE STRING "" )
 set( OpenACC_C_FLAGS "-hacc" )
 set( OpenACC_CXX_FLAGS "-hacc" )
-set( OpenACC_Fortran_FLAGS "-hacc -h acc_model=deep_copy" )
+set( OpenACC_Fortran_FLAGS "-hacc -h acc_model=deep_copy:no_fast_addr:auto_async_none" )
 
 ####################################################################
 # Compiler FLAGS

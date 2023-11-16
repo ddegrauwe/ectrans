@@ -94,6 +94,12 @@ ELSE
 !$acc enter data create (FOUBUF_IN)
 ENDIF
 
+#ifndef gnarls
+! daand: initialize for debugging
+FOUBUF_IN(:)=-1.
+!$acc update device(FOUBUF_IN)
+#endif
+
 IF(KF_OUT_LT > 0) THEN
 CALL GSTATS(1647,0)
 CALL ELTINV(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,ILEI2,IDIM1,&
@@ -115,28 +121,18 @@ ELSE
 !$acc enter data create (FOUBUF)
 ENDIF
 
-!!$acc data present(FOUBUF_IN)
-!!$acc update host(FOUBUF_IN)
-!!$acc end data
-!write (*,*) __FILE__, __LINE__
-!write (*,*)' FOUBUF_IN = ',FOUBUF_IN
-!call flush(6)
-
-
 CALL GSTATS(152,0)
-#ifdef USE_CUDA_AWARE_MPI_FT
-CALL TRMTOL_CUDAAWARE(FOUBUF_IN,FOUBUF,2*KF_OUT_LT)
-#else
-CALL TRMTOL(FOUBUF_IN,FOUBUF,2*KF_OUT_LT)
-#endif
-CALL GSTATS(152,1)
 
-!!$acc data present(FOUBUF)
-!!$acc update host(FOUBUF)
-!!$acc end data
-!write (*,*) __FILE__, __LINE__
-!write (*,*)' FOUBUF = ',FOUBUF
-!call flush(6)
+! daand: GPU-aware MPI doesn't work here on Lumi
+!#ifdef USE_CUDA_AWARE_MPI_FT
+!CALL TRMTOL_CUDAAWARE(FOUBUF_IN,FOUBUF,2*KF_OUT_LT)
+!#else
+!$acc update host(FOUBUF_IN)
+CALL TRMTOL(FOUBUF_IN,FOUBUF,2*KF_OUT_LT)
+!$acc update device(FOUBUF)
+!#endif
+
+CALL GSTATS(152,1)
 
 IF (.NOT.LALLOPERM) THEN
 !$acc exit data delete (FOUBUF_IN)

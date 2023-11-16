@@ -61,6 +61,7 @@ INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
 
 INTEGER(KIND=JPIM) :: II, INM, IR, J, JFLD, ILCM, IOFF,IFLD
 INTEGER(KIND=JPIM) :: IM, JM, MAX_NCPL2M
+INTEGER(KIND=JPIM) :: JFLDPTR(KFIELDS)
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
@@ -70,61 +71,57 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 IF (LHOOK) CALL DR_HOOK('EPRFI1B_MOD:EPRFI1B',0,ZHOOK_HANDLE)
 
+IF (PRESENT(KFLDPTR)) THEN
+  JFLDPTR=KFLDPTR
+ELSE
+  DO JFLD=1,KFIELDS
+    JFLDPTR(JFLD)=JFLD
+  ENDDO
+ENDIF
+
 !$acc data present (PFFT, PSPEC)
 
 !$acc kernels default(none)
 PFFT = 0._JPRB
 !$acc end kernels
 
-IF(PRESENT(KFLDPTR)) THEN
-  ! TODO 
-  DO JFLD=1,KFIELDS
-    IR = 2*(JFLD-1)+1
-    II = IR+1
-    IFLD = KFLDPTR(JFLD)
-    DO JM = 1, D%NUMP
-      IM   = D%MYMS(JM)
-      ILCM = DALD%NCPL2M(IM)
-      IOFF = DALD%NESM0(IM)
-      DO J=1,ILCM,2
-        INM = IOFF+(J-1)*2
-        PFFT(J  ,JM,IR) = PSPEC(IFLD,INM  )
-        PFFT(J+1,JM,IR) = PSPEC(IFLD,INM+1)
-        PFFT(J  ,JM,II) = PSPEC(IFLD,INM+2)
-        PFFT(J+1,JM,II) = PSPEC(IFLD,INM+3)
-      ENDDO
-    ENDDO
-  ENDDO
-ELSE
-  MAX_NCPL2M = MAXVAL (DALD_NCPL2M)
+MAX_NCPL2M = MAXVAL (DALD_NCPL2M)
 
-  !$ACC parallel loop collapse(3) &
-  !$ACC& present(D_MYMS,DALD_NCPL2M,DALD_NESM0,D_NUMP) &
-  !$ACC& present(PFFT,PSPEC) &
-  !$ACC& copyin(KFIELDS,MAX_NCPL2M) &
-  !$ACC& private(IR,II,IM,ILCM,IOFF,INM) default(none)
+!$ACC parallel loop collapse(3) &
+!$ACC& present(D_MYMS,DALD_NCPL2M,DALD_NESM0,D_NUMP) &
+!$ACC& present(PFFT,PSPEC) &
+!$ACC& copyin(KFIELDS,MAX_NCPL2M,JFLDPTR) &
+!$ACC& private(IR,II,IM,ILCM,IOFF,INM,JFLD) default(none)
+DO JM = 1, D_NUMP
   DO JFLD=1,KFIELDS
-    DO JM = 1, D_NUMP
-      DO J=1,MAX_NCPL2M,2
-       IR = 2*(JFLD-1)+1
-       II = IR+1
-       IM   = D_MYMS(JM)
-       ILCM = DALD_NCPL2M(IM)
-       if (J .LE. ILCM) then
-		   IOFF = DALD_NESM0(IM)
-		   INM = IOFF+(J-1)*2
-		   PFFT(J  ,JM,IR) = PSPEC(JFLD,INM  )
-		   PFFT(J+1,JM,IR) = PSPEC(JFLD,INM+1)
-		   PFFT(J  ,JM,II) = PSPEC(JFLD,INM+2)
-		   PFFT(J+1,JM,II) = PSPEC(JFLD,INM+3)
-	   endif
-      ENDDO
+    DO J=1,MAX_NCPL2M,2
+      IR = 2*(JFLD-1)+1
+      II = IR+1
+      IM   = D_MYMS(JM)
+      ILCM = DALD_NCPL2M(IM)
+      if (J .LE. ILCM) then
+        IOFF = DALD_NESM0(IM)
+        INM = IOFF+(J-1)*2
+        PFFT(J  ,JM,IR) = PSPEC(JFLDPTR(JFLD),INM  )
+        PFFT(J+1,JM,IR) = PSPEC(JFLDPTR(JFLD),INM+1)
+        PFFT(J  ,JM,II) = PSPEC(JFLDPTR(JFLD),INM+2)
+        PFFT(J+1,JM,II) = PSPEC(JFLDPTR(JFLD),INM+3)
+      endif
     ENDDO
   ENDDO
-ENDIF
+ENDDO
+
+
+
+#ifdef gnarls
+!$acc update host(PFFT)
+write (20,*) __FILE__,__LINE__
+write (20,*) 'PFFT = '
+write (20,'(6E18.8)') PFFT
+call flush(20)
+#endif
 
 !$acc end data
-
 
 IF (LHOOK) CALL DR_HOOK('EPRFI1B_MOD:EPRFI1B',1,ZHOOK_HANDLE)
 
