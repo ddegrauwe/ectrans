@@ -216,20 +216,24 @@ __global__ void hip_easre1b_hiph_lds_kernel(Real* pfft, Real* foubuf_in, int* d_
         foubuf_in[offset_out] = hipBlock[hipThreadIdx_x][hipThreadIdx_y][hipThreadIdx_z] ;
     }   
 
-
 }
 
-
 extern "C"
-    void
-easre1b_hiph_(Real* pfft, Real* foubuf_in, int* d_npntgtb1, int k_npntgtb1, int r_ndgl, int d_nump, int kjgl, int kjgm, int kfield)
+void easre1b_hiph_(Real* pfft, Real* foubuf_in, int* d_npntgtb1, int k_npntgtb1, int r_ndgl, int d_nump, int kjgl, int kjgm, int kfield, bool lds)
 {
     int kfield_2 = 2 * kfield;
     dim3 grid(r_ndgl / hipBlock_DIM, d_nump / hipBlock_DIM, kfield_2 / hipBlock_DIM);
     dim3 threads(hipBlock_DIM, hipBlock_DIM, hipBlock_DIM);
 
-    //    hipLaunchKernelGGL((hip_easre1b_hiph_kernel), grid,threads, 0, 0, pfft, foubuf_in, d_npntgtb1, k_npntgtb1, r_ndgl, d_nump, kjgl, kjgm, kfield_2);
-    hipLaunchKernelGGL((hip_easre1b_hiph_lds_kernel), grid,threads, 0, 0, pfft, foubuf_in, d_npntgtb1, k_npntgtb1, r_ndgl, d_nump, kjgl, kjgm, kfield_2);
+    if (lds)
+    {
+        hipLaunchKernelGGL((hip_easre1b_hiph_lds_kernel), grid,threads, 0, 0, pfft, foubuf_in, d_npntgtb1, k_npntgtb1, r_ndgl, d_nump, kjgl, kjgm, kfield_2);
+    }
+    else
+    {
+        hipLaunchKernelGGL((hip_easre1b_hiph_kernel), grid,threads, 0, 0, pfft, foubuf_in, d_npntgtb1, k_npntgtb1, r_ndgl, d_nump, kjgl, kjgm, kfield_2);
+    }
+
 
     if (hipDeviceSynchronize() != hipSuccess)
     {
@@ -239,6 +243,5 @@ easre1b_hiph_(Real* pfft, Real* foubuf_in, int* d_npntgtb1, int k_npntgtb1, int 
     if (err0 != hipSuccess)
     {
         fprintf(stderr, "Hip error\n");
-
     }
 }
