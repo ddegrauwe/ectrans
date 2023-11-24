@@ -76,32 +76,36 @@ static int planWorkspaceSize=100*1024*1024; //100MB
  
 extern "C"
 void
-create_plan_ffth_(hipfftHandle * *plan, int *ISIGNp, int *Np, int *LOTp, int * NONSTRIDEDp)
+create_plan_ffth_(hipfftHandle * * plan_ptr_ptr, int *ISIGNp, int *Np, int *LOTp, int * NONSTRIDEDp)
 {
 int ISIGN = *ISIGNp;
 int N = *Np;
 int LOT = *LOTp;
 int NONSTRIDED = *NONSTRIDEDp;
 
-*plan = new hipfftHandle;
-//hipfftHandle plan;
-
 if (hipDeviceSynchronize() != hipSuccess){
 	fprintf(stderr, "Hip error: Failed to synchronize\n");
 	return;	
 }
 
+hipfftHandle * plan_ptr = new hipfftHandle;
+plan_ptr_ptr[0]=plan_ptr;
 
-// //create a single re-usable workspace
-// if(!allocatedWorkspace){
-//   allocatedWorkspace=1;
-//   //allocate plan workspace
-//   hipMalloc(&planWorkspace,planWorkspaceSize);
-// }
-//
-// //disable auto allocation so we can re-use a single workspace (created above)
-//  hipfftSetAutoAllocation(plan, false);
+// create plan
+hipfftSafeCall(hipfftCreate(plan_ptr));
 
+// disable auto allocation so we can re-use a single workspace (created above)
+hipfftSafeCall(hipfftSetAutoAllocation(*plan_ptr, false));
+
+//create a single re-usable workspace
+if(!allocatedWorkspace){
+  allocatedWorkspace=1;
+  //allocate plan workspace
+  hipMalloc(&planWorkspace,planWorkspaceSize);
+}
+
+
+// plan parameters
 int embed[1];
 int stride;
 int cdist, rdist;
@@ -129,66 +133,54 @@ if (NONSTRIDED==0) {
 
 
 fprintf(stderr,"CreatePlan hipfft for \n");
+fprintf(stderr,"  %s %p \n","plan address=",plan_ptr);
 fprintf(stderr,"  %s %d \n","LOT=",LOT);
 fprintf(stderr,"  %s %d \n","stride=",stride);
 fprintf(stderr,"  %s %d \n","rdist=",rdist);
 fprintf(stderr,"  %s %d \n","cdist=",cdist);
+fprintf(stderr,"  %s %p \n","embed address=",embed);
 fprintf(stderr,"  %s %d \n","ISIGN=",ISIGN);
 fprintf(stderr,"  %s %d \n","N=",N);
+fprintf(stderr,"  %s %p \n","N address=",&N);
 
-hipfftSafeCall(hipfftCreate(*plan));
+size_t workSize=123456;
 
 if( ISIGN== -1 ){
-  hipfftSafeCall(hipfftPlanMany(*plan, 1, &N,
+  hipfftSafeCall(hipfftMakePlanMany(*plan_ptr, 1, &N,
                  embed, stride, rdist, 
                  embed, stride, cdist, 
-                 hipfft_1, LOT));
-  //hipfftSafeCall(hipfftPlan1d(&plan, N, HIPFFT_D2Z, LOT));
+                 hipfft_1, LOT, &workSize));
 }
 else if( ISIGN== 1){
-  hipfftSafeCall(hipfftPlanMany(*plan, 1, &N,
+  hipfftSafeCall(hipfftMakePlanMany(*plan_ptr, 1, &N,
                  embed, stride, cdist, 
                  embed, stride, rdist, 
-                 hipfft_2, LOT));
-  //hipfftSafeCall(hipfftPlan1d(&plan, N, HIPFFT_Z2D, LOT));
+                 hipfft_2, LOT, &workSize));
 }
 else {
   abort();
 }
 
-// // use our reusaable work area for the plan
-// hipfftSetWorkArea(plan,planWorkspace); 
+// use our reusaable work area for the plan
+hipfftSafeCall(hipfftSetWorkArea(*plan_ptr,planWorkspace));
 
-/*
-if( ISIGN== -1 ){
-  hipfftSafeCall(hipfftPlan1d(&plan, N, HIPFFT_D2Z, LOT));
+// print worksize returned from hipfftMakePlan
+fprintf(stderr,"  %s %d \n","workSize from hipfftMakePlan=",workSize);
+
+// get worksize
+hipfftSafeCall(hipfftGetSize(*plan_ptr, &workSize));
+fprintf(stderr,"  %s %d \n","workSize from hipfftGetSize=",workSize);
+
+// abort if we don't have enough space for the work area in the re-usable workspace
+if(workSize > planWorkspaceSize){
+	fprintf(stderr,"create_plan_ffth: plan workspace size not large enough - aborting\n");
+	abort();
 }
-else if( ISIGN== 1){
-  hipfftSafeCall(hipfftPlan1d(&plan, N, HIPFFT_Z2D, LOT));
-}
-else {
-  abort();
-}
-*/
 
 if (hipDeviceSynchronize() != hipSuccess){
 	fprintf(stderr, "Hip error: Failed to synchronize\n");
 	return;	
 }
-
-//*PLANp=plan;
-//fprintf(stderr, "create_plan_ffth_: plan-address = %p\n",*plan);
-
-// // get size used by this plan
-// size_t workSize;
-// hipfftGetSize(plan,&workSize);
-//
-// // exit if we don't have enough space for the work area in the re-usable workspace
-// if(workSize > planWorkspaceSize){
-//   printf("create_plan_ffth: plan workspace size not large enough - exiting\n");
-// exit(1);
-// }
-
 
 return;
 

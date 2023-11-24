@@ -185,7 +185,7 @@ if ( present(PSPDIV) ) THEN
   if (.not. is_contiguous(PSPDIV) ) call abort_trans('PSPDIV not contiguous')
 endif
 if ( present(PSPSCALAR) ) THEN
-  write (20,*) 'shape(PSPDIV) = ',SHAPE(PSPSCALAR)
+  write (20,*) 'shape(PSPSCALAR) = ',SHAPE(PSPSCALAR)
   if (.not. is_contiguous(PSPSCALAR) ) call abort_trans('PSPSCALAR not contiguous')
 endif
 if ( present(PSPSC3A) ) THEN
@@ -246,7 +246,7 @@ endif
 if ( present(KPROMA) ) THEN
   write (20,*) 'KPROMA = ',KPROMA
 endif
-
+!call flush(20)
 
 
 ! Set defaults
@@ -578,13 +578,13 @@ CALL GSTATS(1808,1)
 
 
 !call MPI_BARRIER(MPI_COMM_WORLD,IERROR)
-!#ifdef USE_CUDA_AWARE_MPI_FT
-!!$ACC data copyin (PGP  ) if (present (PGP  ))
-!!$ACC data copyin (PGPUV) if (present (PGPUV))
-!!$ACC data copyin (PGP3A) if (present (PGP3A))
-!!$ACC data copyin (PGP3B) if (present (PGP3B))
-!!$ACC data copyin (PGP2 ) if (present (PGP2 ))
-!#endif
+#ifdef USE_CUDA_AWARE_MPI_FT
+!$ACC data copyin (PGP  ) if (present (PGP  ))
+!$ACC data copyin (PGPUV) if (present (PGPUV))
+!$ACC data copyin (PGP3A) if (present (PGP3A))
+!$ACC data copyin (PGP3B) if (present (PGP3B))
+!$ACC data copyin (PGP2 ) if (present (PGP2 ))
+#endif
 !$ACC data copyout (PSPVOR   ) if (present (PSPVOR   ))
 !$ACC data copyout (PSPDIV   ) if (present (PSPDIV   ))
 !$ACC data copyout (PSPSCALAR) if (present (PSPSCALAR))
@@ -603,13 +603,13 @@ CALL EDIR_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_UV,IF_SCALARS,&
 !$ACC end data
 !$ACC end data
 !$ACC end data
-!#ifdef USE_CUDA_AWARE_MPI_FT
-!!$ACC end data
-!!$ACC end data
-!!$ACC end data
-!!$ACC end data
-!!$ACC end data
-!#endif
+#ifdef USE_CUDA_AWARE_MPI_FT
+!$ACC end data
+!$ACC end data
+!$ACC end data
+!$ACC end data
+!$ACC end data
+#endif
 
 
 #ifdef gnarls
@@ -678,4 +678,4 @@ IF (LHOOK) CALL DR_HOOK('EDIR_TRANS',1,ZHOOK_HANDLE)
 !endif INTERFACE
 
 END SUBROUTINE EDIR_TRANS
-  
+

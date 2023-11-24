@@ -124,13 +124,13 @@ ENDIF
 CALL GSTATS(152,0)
 
 ! daand: GPU-aware MPI doesn't work here on Lumi
-!#ifdef USE_CUDA_AWARE_MPI_FT
-!CALL TRMTOL_CUDAAWARE(FOUBUF_IN,FOUBUF,2*KF_OUT_LT)
-!#else
+#ifdef USE_CUDA_AWARE_MPI_FT
+CALL TRMTOL_CUDAAWARE(FOUBUF_IN,FOUBUF,2*KF_OUT_LT)
+#else
 !$acc update host(FOUBUF_IN)
 CALL TRMTOL(FOUBUF_IN,FOUBUF,2*KF_OUT_LT)
 !$acc update device(FOUBUF)
-!#endif
+#endif
 
 CALL GSTATS(152,1)
 

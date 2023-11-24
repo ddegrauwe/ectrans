@@ -273,6 +273,7 @@ endif
 if ( present(LDUVDER) ) THEN
   write (20,*) 'LDUVDER = ',LDUVDER
 endif
+!call flush(20)
 
 #ifndef gnarls
 
@@ -711,13 +712,13 @@ CALL GSTATS(1807,1)
 !$ACC data copyin (PSPSC2   ) if (present (PSPSC2   ))
 !$ACC data copyin (PMEANU   ) if (present (PMEANU   ))
 !$ACC data copyin (PMEANV   ) if (present (PMEANV   ))
-!#ifdef USE_CUDA_AWARE_MPI_FT
-!!$ACC data copyout (PGP  ) if (present (PGP  ))
-!!$ACC data copyout (PGPUV) if (present (PGPUV))
-!!$ACC data copyout (PGP3A) if (present (PGP3A))
-!!$ACC data copyout (PGP3B) if (present (PGP3B))
-!!$ACC data copyout (PGP2 ) if (present (PGP2 ))
-!#endif
+#ifdef USE_CUDA_AWARE_MPI_FT
+!$ACC data copyout (PGP  ) if (present (PGP  ))
+!$ACC data copyout (PGPUV) if (present (PGPUV))
+!$ACC data copyout (PGP3A) if (present (PGP3A))
+!$ACC data copyout (PGP3B) if (present (PGP3B))
+!$ACC data copyout (PGP2 ) if (present (PGP2 ))
+#endif
 ! Perform transform
 !call MPI_BARRIER(MPI_COMM_WORLD,IERROR)
 CALL EINV_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_OUT_LT,&
@@ -727,13 +728,13 @@ CALL EINV_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_OUT_LT,&
  & PMEANU,PMEANV )
 
 !call MPI_BARRIER(MPI_COMM_WORLD,IERROR)
-!#ifdef USE_CUDA_AWARE_MPI_FT
-!!$ACC end data
-!!$ACC end data
-!!$ACC end data
-!!$ACC end data
-!!$ACC end data
-!#endif
+#ifdef USE_CUDA_AWARE_MPI_FT
+!$ACC end data
+!$ACC end data
+!$ACC end data
+!$ACC end data
+!$ACC end data
+#endif
 !$ACC end data
 !$ACC end data
 !$ACC end data

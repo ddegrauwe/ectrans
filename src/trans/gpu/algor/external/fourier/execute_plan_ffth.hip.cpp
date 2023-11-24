@@ -107,15 +107,16 @@ __global__ void debugFloat(int varId, int N, HIP_DATA_TYPE_REAL *x) {
 extern "C" {
 
 void 
-execute_plan_ffth_c_(int ISIGNp, int N, DATA_TYPE *data_in_host, DATA_TYPE *data_out_host, long *iplan)
+execute_plan_ffth_c_(int ISIGNp, int N, DATA_TYPE *data_in_host, DATA_TYPE *data_out_host, hipfftHandle * plan_ptr)
 //void hipfunction(int ISIGNp, int N, DATA_TYPE *data_in_host, DATA_TYPE *data_out_host, long *iplan)
 {
+	
 HIP_DATA_TYPE_COMPLEX *data_in = reinterpret_cast<HIP_DATA_TYPE_COMPLEX*>(data_in_host);
 HIP_DATA_TYPE_COMPLEX *data_out = reinterpret_cast<HIP_DATA_TYPE_COMPLEX*>(data_out_host);
-hipfftHandle* PLANp = reinterpret_cast<hipfftHandle*>(iplan);
-//fprintf(stderr, "execute_plan_ffth_c_: plan-address = %p\n",PLANp);
-//abort();
-hipfftHandle plan = *PLANp;
+
+fprintf(stderr, "execute_plan_ffth_c_: plan address = %p\n",plan_ptr);
+fflush(stderr);
+
 int ISIGN = ISIGNp;
 
 // Check variables on the GPU:
@@ -127,30 +128,34 @@ for (int i = 0; i < device_count; ++i) {
     hipDeviceSynchronize();
 }*/
 
-/*if (hipDeviceSynchronize() != hipSuccess){
+if (hipDeviceSynchronize() != hipSuccess){
 	fprintf(stderr, "Hip error: Failed to synchronize\n");
-	return;	
-}*/
+	abort();
+}
 
 if( ISIGN== -1 ){
 #ifdef TRANS_SINGLE
-  hipfftSafeCall(hipfftExecR2C(plan, (HIP_DATA_TYPE_REAL*)data_in, data_out));
+  hipfftSafeCall(hipfftExecR2C(*plan_ptr, (HIP_DATA_TYPE_REAL*)data_in, data_out));
 #else
-  hipfftSafeCall(hipfftExecD2Z(plan, (HIP_DATA_TYPE_REAL*)data_in, data_out));
+  hipfftSafeCall(hipfftExecD2Z(*plan_ptr, (HIP_DATA_TYPE_REAL*)data_in, data_out));
 #endif	
 }
 else if( ISIGN== 1){
 #ifdef TRANS_SINGLE
-  hipfftSafeCall(hipfftExecC2R(plan, data_in, (HIP_DATA_TYPE_REAL*)data_out));
+  hipfftSafeCall(hipfftExecC2R(*plan_ptr, data_in, (HIP_DATA_TYPE_REAL*)data_out));
 #else
-  hipfftSafeCall(hipfftExecZ2D(plan, data_in, (HIP_DATA_TYPE_REAL*)data_out));
+  hipfftSafeCall(hipfftExecZ2D(*plan_ptr, data_in, (HIP_DATA_TYPE_REAL*)data_out));
 #endif	
 }
 else {
   abort();
 }
 
-hipDeviceSynchronize();
+if (hipDeviceSynchronize() != hipSuccess){
+	fprintf(stderr, "Hip error: Failed to synchronize\n");
+	abort();
+}
+
 
 /*for (int i = 0; i < device_count; ++i) {
     hipSetDevice(i);
