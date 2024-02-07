@@ -273,7 +273,7 @@ endif
 if ( present(LDUVDER) ) THEN
   write (20,*) 'LDUVDER = ',LDUVDER
 endif
-!call flush(20)
+call flush(20)
 
 #ifndef gnarls
 
@@ -803,6 +803,13 @@ if ( number_of_calls == -1 ) then
   call abort_trans('hold it')
 endif
 
+#endif
+
+#ifndef gnarls
+write (20,*) 'einv_trans finished'
+call flush(20)
+write (0,*) 'einv_trans finished'
+call flush(0)
 #endif
 
 IF (LHOOK) CALL DR_HOOK('EINV_TRANS',1,ZHOOK_HANDLE)

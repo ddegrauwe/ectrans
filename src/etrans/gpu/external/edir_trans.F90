@@ -246,7 +246,7 @@ endif
 if ( present(KPROMA) ) THEN
   write (20,*) 'KPROMA = ',KPROMA
 endif
-!call flush(20)
+call flush(20)
 
 
 ! Set defaults
@@ -664,11 +664,23 @@ endif
 endif
 
 
+#endif
+
+
 if ( number_of_calls == -1 ) then
+!if ( number_of_calls == 38 ) then
+  call flush(20)
   write (0,*) 'aborting at call number ',number_of_calls
   call abort_trans('hold it')
 endif
+
+#ifndef gnarls
+write (20,*) 'edir_trans finished'
+call flush(20)
+write (0,*) 'edir_trans finished'
+call flush(0)
 #endif
+
 
 !call MPI_BARRIER(MPI_COMM_WORLD,IERROR)
 
