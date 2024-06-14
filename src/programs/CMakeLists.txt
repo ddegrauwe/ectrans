@@ -30,7 +30,12 @@ if( HAVE_TOOLS )
 
 endif()
 
-foreach( program ectrans-benchmark ectrans-benchmark-ifs )
+set(programs  ectrans-benchmark ectrans-benchmark-ifs)
+if ( HAVE_ETRANS )
+	list(APPEND programs ectrans-lam-benchmark)
+endif()
+
+foreach( program ${programs})
 
   if ( HAVE_CPU )
     foreach( prec dp sp )
@@ -50,7 +55,8 @@ foreach( program ectrans-benchmark ectrans-benchmark-ifs )
   if( HAVE_GPU )
     foreach( prec dp sp )
       if( HAVE_${prec} )
-            ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
+			#if ( NOT "${program}" STREQUAL "ectrans-lam-benchmark" )    # GPU version of LAM transforms not ready; to be included later!
+				ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
                                     SOURCES ${program}.F90
                                     LINKER_LANGUAGE Fortran
                                     LIBS
@@ -58,7 +64,8 @@ foreach( program ectrans-benchmark ectrans-benchmark-ifs )
                                       parkind_${prec}
                                       trans_gpu_${prec}
                                       OpenACC::OpenACC_Fortran
-            )
+				)
+			#endif()
        endif()
     endforeach( prec )
   endif( HAVE_GPU )

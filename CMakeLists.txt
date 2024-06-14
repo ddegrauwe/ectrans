@@ -92,6 +92,10 @@ ecbuild_add_option( FEATURE TRANSI
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION AND HAVE_CPU )
 
+ecbuild_add_option( FEATURE ETRANS
+                    DEFAULT OFF
+                    DESCRIPTION "Include Limited-Area-Model Transforms" )
+
 # Search for available GPU runtimes, searching for HIP first and, if not found,
 # attempt to find NVIDIA
 if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))

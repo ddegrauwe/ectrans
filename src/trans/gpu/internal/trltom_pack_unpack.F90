@@ -67,7 +67,7 @@ CONTAINS
     USE BUFFERED_ALLOCATOR_MOD
     USE PARKIND_ECTRANS, ONLY : JPIM,JPRBT
     USE TPM_DISTR, ONLY : D,MYSETW,D_NSTAGTF,D_NPNTGTB0,D_NPTRLS,D_NDGL_FS
-    USE TPM_GEOMETRY, ONLY : G_NMEN,G_NLOEN
+    USE TPM_GEOMETRY, ONLY : G_NMEN,G_NLOEN,G_NMEN_MAX
     USE TPM_DIM, ONLY: R_NSMAX
     USE ISO_C_BINDING
     !
@@ -90,7 +90,7 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-    !$ACC DATA PRESENT(G_NMEN,D_NPNTGTB0,FOUBUF_IN,PREEL_COMPLEX,D_NSTAGTF,D_NDGL_FS,G_NLOEN, R_NSMAX) ASYNC(1)
+    !$ACC DATA PRESENT(G_NMEN,D_NPNTGTB0,FOUBUF_IN,PREEL_COMPLEX,D_NSTAGTF,D_NDGL_FS,G_NLOEN, R_NSMAX,G_NMEN_MAX) ASYNC(1)
 #endif
 
     ! scale results and move into next transformation buffer
@@ -104,7 +104,8 @@ CONTAINS
     !$ACC& ASYNC(1) TILE(32,16,1)
 #endif
     DO KGL=1,D_NDGL_FS
-      DO JM=0,R_NSMAX !(note that R_NSMAX <= G_NMEN(IGLG) for all IGLG)
+      !DO JM=0,R_NSMAX !(note that R_NSMAX <= G_NMEN(IGLG) for all IGLG)
+      DO JM=0,G_NMEN_MAX
         DO JF=1,KF_FS
           IGLG = OFFSET_VAR+KGL-1
           IF (JM <= G_NMEN(IGLG)) THEN
@@ -125,6 +126,41 @@ CONTAINS
     !$ACC END DATA
 
     !$ACC WAIT(1)
+#endif
+
+
+#ifdef gnarls
+!$acc update host(PREEL_COMPLEX)
+write (6,*) __FILE__, __LINE__; call flush(6)
+write (6,*) 'PREEL = ',PREEL_COMPLEX
+write (6,*) 'D_NDGL_FS = ',D_NDGL_FS
+write (6,*) 'R_NSMAX = ',R_NSMAX
+write (6,*) 'KF_FS = ',KF_FS
+write (6,*) 'OFFSET_VAR = ',OFFSET_VAR
+
+    DO KGL=1,D_NDGL_FS
+      !DO JM=0,R_NSMAX !(note that R_NSMAX <= G_NMEN(IGLG) for all IGLG)
+      DO JM=0,G_NMEN_MAX
+        DO JF=1,KF_FS
+          IGLG = OFFSET_VAR+KGL-1
+          IF (JM <= G_NMEN(IGLG)) THEN
+            IOFF_LAT = KF_FS*D_NSTAGTF(KGL)+(JF-1)*(D_NSTAGTF(KGL+1)-D_NSTAGTF(KGL))
+
+            SCAL = 1._JPRBT/REAL(G_NLOEN(IGLG),JPRBT)
+            ISTA  = D_NPNTGTB0(JM,KGL)*KF_FS*2
+
+            FOUBUF_IN(ISTA+2*JF-1) = SCAL * PREEL_COMPLEX(IOFF_LAT+2*JM+1)
+            FOUBUF_IN(ISTA+2*JF  ) = SCAL * PREEL_COMPLEX(IOFF_LAT+2*JM+2)
+            
+            write (6,*) 'PREEL(',IOFF_LAT+2*JM+1,') -> FOUBUF_IN(',ISTA+2*JF-1,')'
+            write (6,*) 'PREEL(',IOFF_LAT+2*JM+2,') -> FOUBUF_IN(',ISTA+2*JF,')'
+          ENDIF
+        ENDDO
+      ENDDO
+    ENDDO
+call flush(6)
+write (6,*) 'FOUBUF_IN = ',FOUBUF_IN
+
 #endif
   END SUBROUTINE TRLTOM_PACK
 

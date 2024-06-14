@@ -288,6 +288,45 @@ ENDDO
 !$ACC WAIT(1)
 #endif
 
+#ifdef gnarls
+
+write (6,*) __FILE__, __LINE__; call flush(6)
+write (6,*) 'D_NDGL_FS = ',D_NDGL_FS
+write (6,*) 'KF_CURRENT = ',KF_CURRENT
+write (6,*) 'G_NLOEN_MAX/2 = ',G_NLOEN_MAX/2
+write (6,*) 'G_NLOEN_MAX/2 = ',G_NLOEN_MAX/2
+!$acc update host(foubuf)
+DO KGL=1,D_NDGL_FS
+  DO JF=1,KF_CURRENT
+    DO JM=0,G_NLOEN_MAX/2
+      IGLG = OFFSET_VAR+KGL-1
+
+      ! FFT transforms NLON real values to floor(NLON/2)+1 complex numbers. Hence we have
+      ! to fill those floor(NLON/2)+1 values.
+      ! Truncation happens starting at G_NMEN+1. Hence, we zero-fill those values.
+      IF (JM <= G_NLOEN(IGLG)/2) THEN
+        RET_REAL = 0.0_JPRBT
+        RET_COMPLEX = 0.0_JPRBT
+        IOFF_LAT = KF_TOTAL*D_NSTAGTF(KGL)+(JF-1)*(D_NSTAGTF(KGL+1)-D_NSTAGTF(KGL))
+
+        IF (JM <= G_NMEN(IGLG)) THEN
+          ISTA  = D_NPNTGTB0(JM,KGL)*KF_CURRENT*2
+          RET_REAL    = FOUBUF(ISTA+2*JF-1)
+          RET_COMPLEX = FOUBUF(ISTA+2*JF  )
+          
+          write (6,*) 'FOUBUF(',ISTA+2*JF-1,') -> PREEL(',IOFF_LAT+2*JM+1,')'
+        ELSE
+          write (6,*) '0.0 -> PREEL(',IOFF_LAT+2*JM+1,')'
+        ENDIF
+        PREEL_COMPLEX(IOFF_LAT+2*JM+1) = RET_REAL
+        PREEL_COMPLEX(IOFF_LAT+2*JM+2) = RET_COMPLEX
+      ENDIF
+    ENDDO
+  ENDDO
+ENDDO
+call flush(6)
+#endif
+
 END SUBROUTINE TRMTOL_UNPACK
 END MODULE TRMTOL_PACK_UNPACK
 
