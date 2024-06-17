@@ -167,6 +167,9 @@ ENDIF
 ILEI2 = 8*KF_UV + 2*KF_SCALARS + 2*KF_SCDERS
 IDIM1 = 2*KF_OUT_LT
 
+write( *,*) 'KF_FS = ',KF_FS
+write (*,*) 'KF_OUT_LT = ',KF_OUT_LT
+
 ALLOCATOR = MAKE_BUFFERED_ALLOCATOR()
 HELTINV = PREPARE_ELTINV(ALLOCATOR,KF_UV,KF_SCALARS,KF_SCDERS,KF_OUT_LT)   ! ZFFT, FOUBUF_IN
 ! HTRMTOL_PACK = PREPARE_TRMTOL_PACK(ALLOCATOR,IF_LEG)  ! FOUBUF_IN, but incompatible with LAM
@@ -179,26 +182,33 @@ CALL INSTANTIATE_ALLOCATOR(ALLOCATOR, GROWING_ALLOCATION)
 
 IF(KF_OUT_LT > 0) THEN
   CALL GSTATS(1647,0)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   CALL ELTINV(ALLOCATOR, HELTINV, KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,ILEI2,IDIM1,FOUBUF_IN,&
      & PSPVOR,PSPDIV,PSPSCALAR ,&
      & PSPSC3A,PSPSC3B,PSPSC2 , &
      & FSPGL_PROC=FSPGL_PROC,PSPMEANU=PSPMEANU,PSPMEANV=PSPMEANV)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   CALL GSTATS(1647,1)
 
 CALL GSTATS(152,0)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 CALL TRMTOL_CUDAAWARE(ALLOCATOR,HTRMTOL,FOUBUF_IN,FOUBUF,KF_OUT_LT)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 CALL TRMTOL_UNPACK(ALLOCATOR,HTRMTOL_UNPACK,FOUBUF,PREEL,KF_OUT_LT,KF_FS)   ! Formerly known as fourier_in routine
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 CALL GSTATS(152,1)
 ENDIF
 
+!!$acc update host(preel)
+!write (*,*) 'PREEL = ',PREEL
+
 IF(KF_UV > 0 .OR. KF_SCDERS > 0) THEN
-  CALL EFSC(PREEL, KF_UV, KF_SCALARS, KF_SCDERS)
+  CALL EFSC(PREEL, KF_UV, KF_SCALARS, KF_SCDERS,KF_FS)
 ENDIF
+
+!!$acc update host(preel)
+!write (*,*) 'after EFSC:'
+!write (*,*) 'PREEL = ',PREEL
 
 IF ( KF_FS > 0 ) THEN
   CALL EFTINV(ALLOCATOR,PREEL,KF_FS)

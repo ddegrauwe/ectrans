@@ -55,17 +55,16 @@ foreach( program ${programs})
   if( HAVE_GPU )
     foreach( prec dp sp )
       if( HAVE_${prec} )
-			#if ( NOT "${program}" STREQUAL "ectrans-lam-benchmark" )    # GPU version of LAM transforms not ready; to be included later!
-				ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
-                                    SOURCES ${program}.F90
-                                    LINKER_LANGUAGE Fortran
-                                    LIBS
-                                      fiat
-                                      parkind_${prec}
-                                      trans_gpu_${prec}
-                                      OpenACC::OpenACC_Fortran
-				)
-			#endif()
+			ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
+								SOURCES ${program}.F90
+								LINKER_LANGUAGE Fortran
+								LIBS
+								  fiat
+								  parkind_${prec}
+								  trans_gpu_${prec}
+								  OpenACC::OpenACC_Fortran
+			)
+			target_compile_definitions( ${program}-gpu-${prec} PRIVATE ${GPU_OFFLOAD}GPU )
        endif()
     endforeach( prec )
   endif( HAVE_GPU )

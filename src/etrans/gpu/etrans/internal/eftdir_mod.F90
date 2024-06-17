@@ -59,13 +59,13 @@ IF (PRESENT(AUX_PROC)) THEN
 ENDIF
 
 
-write (*,*) __FILE__, __LINE__; call flush(6)
-write (*,*) 'KF_FS = ',KF_FS
-write (*,*) 'shape(PREEL) = ',shape(PREEL)
-write (*,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) 'KF_FS = ',KF_FS
+! write (6,*) 'shape(PREEL) = ',shape(PREEL)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 
-write (*,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 LOENS(1)=IRLEN
 JLOT=SIZE(PREEL)/(IRLEN+2)
 ALLOCATE(OFFSETS(JLOT))
@@ -73,14 +73,14 @@ ALLOCATE(OFFSETS(JLOT))
 DO JJ=1,JLOT
   OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
 ENDDO
-write (*,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 IF (JLOT==0) THEN
   IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',1,ZHOOK_HANDLE)
   RETURN
 ENDIF
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 
 
@@ -95,11 +95,11 @@ write (*,cfrmt) PREEL
 call flush(6)
 #endif
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 CALL EXECUTE_DIR_FFT(PREEL(:),PREEL(:),JLOT, &
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 
 #ifdef gnarls
@@ -114,7 +114,7 @@ DEALLOCATE(OFFSETS)
 
 !$ACC END DATA
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 IF (LHOOK) CALL DR_HOOK('EFTDIR_MOD:EFTDIR',1,ZHOOK_HANDLE)
 

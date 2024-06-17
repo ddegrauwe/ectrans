@@ -146,6 +146,7 @@ INTEGER(KIND=JPIM) :: IFC, ISTA
 INTEGER(KIND=JPIM) :: IVORL,IVORU,IDIVL,IDIVU,IUL,IUU,IVL,IVU,ISL,ISU,IDL,IDU
 INTEGER(KIND=JPIM) :: IFIRST, ILAST,IDIM1,IDIM3,J3
 INTEGER(KIND=C_SIZE_T) :: IALLOC_POS, IALLOC_SZ
+character(len=32) :: frmt
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 
@@ -157,7 +158,7 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 IF (LHOOK) CALL DR_HOOK('ELTINV_MOD:ELTINV',0,ZHOOK_HANDLE)
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 IALLOC_POS = 1
 
@@ -170,6 +171,8 @@ IALLOC_POS = IALLOC_POS + IALLOC_SZ
 
 
 ! FOUBUF_IN
+write (6,*) __FILE__, __LINE__
+write (6,*) 'D%NLENGT0B = ',D%NLENGT0B
 IALLOC_POS = 1
 IALLOC_SZ = ALIGN(D%NLENGT0B*2*KF_OUT_LT*SIZEOF(FOUBUF_IN(1)), 128)
 CALL ASSIGN_PTR(FOUBUF_IN, GET_ALLOCATION(ALLOCATOR, HELTINV%HFOUBUF_IN),&
@@ -188,7 +191,11 @@ IALLOC_POS = IALLOC_POS + IALLOC_SZ
 
 IFIRST = 1
 ILAST  = 4*KF_UV
-! write (6,*) __FILE__, __LINE__; call flush(6)
+! ! write (6,*) __FILE__, __LINE__; call flush(6)
+
+!$acc kernels present (ZFFT)
+ZFFT = 0.0_JPRB
+!$acc end kernels
 
 IF (KF_UV > 0) THEN
   IVORL = 1
@@ -201,11 +208,46 @@ IF (KF_UV > 0) THEN
   IVU   = 8*KF_UV
   CALL EPRFI1B(ZFFT(:,:,IVORL:IVORU),PSPVOR,KF_UV,KFLDPTRUV)
   CALL EPRFI1B(ZFFT(:,:,IDIVL:IDIVU),PSPDIV,KF_UV,KFLDPTRUV)
+  
+#ifdef gnarls
+write (6,*) __FILE__, __LINE__
+
+write (frmt,*) '(',RALD%NDGLSUR+R%NNOEXTZG,'E12.3)'
+write (6,*) 'shape(ZFFT) = ',shape(ZFFT)
+write (6,*) 'kf_uv = ',kf_uv
+write (6,*) 'kf_scders = ',kf_scders
+write (6,*) 'kf_scalars = ',kf_scalars
+!$acc update host(ZFFT)
+!write (6,*) 'PSPVOR:'
+!write (6,*) PSPVOR
+write (6,*) 'ZFFT(VOR):'
+write (6,frmt) ZFFT(:,:,IVORL:IVORU)
+!write (6,*) 'PSPDIV:'
+!write (6,*) PSPDIV
+write (6,*) 'ZFFT(DIV):'
+write (6,frmt) ZFFT(:,:,IDIVL:IDIVU)
+call flush(6)
+#endif   
+
   ILAST = ILAST+4*KF_UV
   CALL EVDTUV(KF_UV,KFLDPTRUV,ZFFT(:,:,IVORL:IVORU),ZFFT(:,:,IDIVL:IDIVU),&
    & ZFFT(:,:,IUL:IUU),ZFFT(:,:,IVL:IVU),PSPMEANU,PSPMEANV)
+   
+   
+#ifdef gnarls
+write (frmt,*) '(',RALD%NDGLSUR+R%NNOEXTZG,'E12.3)'
+!$acc update host(ZFFT)
+write (6,*) 'U:'
+write (6,frmt) ZFFT(:,:,IUL:IUU)
+write (6,*) 'V:'
+write (6,frmt) ZFFT(:,:,IVL:IVU)
+call flush(6)
+
+#endif   
+
+
 ENDIF
-! write (6,*) __FILE__, __LINE__; call flush(6)
+! ! write (6,*) __FILE__, __LINE__; call flush(6)
 
 IF(KF_SCALARS > 0)THEN
   IF(PRESENT(PSPSCALAR)) THEN
@@ -266,19 +308,19 @@ IF(KF_UV > 0 .AND. .NOT. LDIVGP) THEN
   ISTA = ISTA+2*KF_UV
 ENDIF
 
-!! write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 CALL ELEINV(ALLOCATOR,ZFFT) 
-!! write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 !     ------------------------------------------------------------------
 
 !*       5.    RECOMBINATION SYMMETRIC/ANTISYMMETRIC PART.
 !              --------------------------------------------
 
-!! write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 CALL EASRE1B(KF_OUT_LT,ZFFT(:,:,ISTA:ISTA+IFC-1),FOUBUF_IN)
-!! write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 !     ------------------------------------------------------------------
 
@@ -299,7 +341,7 @@ ENDIF
     !$ACC END DATA
 #endif
 
-!! write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 IF (LHOOK) CALL DR_HOOK('ELTINV_MOD:ELTINV',1,ZHOOK_HANDLE)
 

@@ -191,6 +191,7 @@ integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
 
 real(kind=jprb) :: zexwn, zeywn
+integer :: seed(20)
 
 !===================================================================================================
 
@@ -207,6 +208,11 @@ real(kind=jprb) :: zexwn, zeywn
 !===================================================================================================
 
 luse_mpi = detect_mpirun()
+
+! set random seed for reproducibility
+seed(:)=20220428
+call random_seed(put=seed)
+
 
 ! Setup
 call get_command_line_arguments(nlon, nlat, nsmax, nmsmax, iters, nfld, nlev, lvordiv, lscders, luvders, &
@@ -329,29 +335,29 @@ endif
 
 if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 if( lstats ) call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
   &               kmax_resol=nmax_resol, kpromatr=0, kprgpns=nprgpns, kprgpew=nprgpew, &
   &               kprtrw=nprtrw, kcombflen=ncombflen, ldsync_trans=lsync_trans,               &
   &               ldalloperm=.true., ldmpoff=.not.luse_mpi)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   if( lstats ) call gstats(1, 1)
 
   if( lstats ) call gstats(2, 0)
 zexwn=1._jprb  ! 2*pi/(nx*dx): spectral resolution
 zeywn=1._jprb  ! 2*pi/(ny*dy)
 nloen=nlon
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 call esetup_trans(ksmax=nsmax, kmsmax=nmsmax, kdgl=nlat, kdgux=nlat, kloen=nloen, ldsplit=.true.,          &
   &                 ldusefftw=lfftw,pexwn=zexwn,peywn=zeywn)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
   if( lstats ) call gstats(2, 1)
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 call etrans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 if (nproma == 0) then ! no blocking (default when not specified)
   nproma = ngptot
@@ -411,14 +417,18 @@ allocate(zmeanu(nflevl),zmeanv(nflevl))
 zmeanu(:)=0._jprb
 zmeanv(:)=0._jprb
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 call initialize_spectral_arrays(nsmax, nmsmax, zspsc2, sp3d)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 ! Point convenience variables to storage variable sp3d
 zspvor  => sp3d(:,:,1)
 zspdiv  => sp3d(:,:,2)
 zspsc3a => sp3d(:,:,3:3+(nfld-1))
+
+! WARNING: setting to zero to trace problem in V/D->U/V
+zspsc3a(:,:,:)=-999.*zspsc3a(:,:,:)
+zspsc2=-777.*zspsc2
 
 !===================================================================================================
 ! Allocate gridpoint arrays
@@ -500,15 +510,15 @@ if (lprint_norms .or. ncheck > 0) then
   allocate(znormt(nflevg))
   allocate(znormt0(nflevg))
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor0, kvset=ivset(1:nflevg))
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv0, kvset=ivset(1:nflevg))
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt0,   kvset=ivset(1:nflevg))
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp0,  kvset=ivsetsc)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   
   if (verbosity >= 1 .and. myproc == 1) then
     do ifld = 1, nflevg
@@ -558,7 +568,7 @@ ztstepmin2 = 9999999999999999._jprd
 !=================================================================================================
 ! Dump the values to disk, for debugging only
 !=================================================================================================
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 if (ldump_values) then
 	! dump a field to a binary file
@@ -569,7 +579,7 @@ if (ldump_values) then
 	endif
     call dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, zspsc3a(1,:,1),ivset(1:1), 'T', noutdump)
 endif
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 write(nout,'(a)') '======= Start of spectral transforms  ======='
 write(nout,'(" ")')
@@ -592,7 +602,7 @@ do jstep = 1, iters
   if( lstats ) call gstats(4,0)
   if (lvordiv) then
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
     call einv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
        & pspvor=zspvor,                     & ! spectral vorticity
@@ -610,11 +620,11 @@ write (6,*) __FILE__, __LINE__; call flush(6)
        & pgp3a=zgp3a,                       &
      & pmeanu=zmeanu,                     &
      & pmeanv=zmeanv)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
   else
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
     call einv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
        & pspsc3a=zspsc3a,                   & ! spectral scalars
@@ -623,7 +633,7 @@ write (6,*) __FILE__, __LINE__; call flush(6)
        & kvsetsc3a=ivset,                   &
        & pgp2=zgp2,                         &
        & pgp3a=zgp3a)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
   endif
   
@@ -635,7 +645,7 @@ write (6,*) __FILE__, __LINE__; call flush(6)
   ! While in grid point space, dump the values to disk, for debugging only
   !=================================================================================================
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   if (ldump_values) then
     ! dump a field to a binary file
     call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgp2(:,1,:),         'S', noutdump)
@@ -645,7 +655,7 @@ write (6,*) __FILE__, __LINE__; call flush(6)
     endif
     call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgp3a(:,nflevg,1,:), 'T', noutdump)
   endif
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   
   !=================================================================================================
   ! Do direct transform
@@ -657,7 +667,7 @@ write (6,*) __FILE__, __LINE__; call flush(6)
   
 
   if (lvordiv) then
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
     call edir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgp2(:,1:1,:),                &
       & pgpuv=zgpuv(:,:,1:2,:),             &
@@ -671,9 +681,9 @@ write (6,*) __FILE__, __LINE__; call flush(6)
       & kvsetsc3a=ivset,                    &
     & pmeanu=zmeanu,                      &
     & pmeanv=zmeanv)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   else
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   
     call edir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgp2(:,1:1,:),                &
@@ -682,7 +692,7 @@ write (6,*) __FILE__, __LINE__; call flush(6)
       & pspsc3a=zspsc3a,                    &
       & kvsetsc2=ivsetsc,                   &
       & kvsetsc3a=ivset)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   endif
   if( lstats ) call gstats(5,1)
   ztstep2(jstep) = (omp_get_wtime() - ztstep2(jstep))
@@ -691,7 +701,7 @@ write (6,*) __FILE__, __LINE__; call flush(6)
 	! Dump the values to disk, for debugging only
 	!=================================================================================================
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 	if (ldump_values) then
 		! dump a field to a binary file
 		call dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, zspsc2(1,:),ivsetsc(1:1), 'S', noutdump)
@@ -701,7 +711,7 @@ write (6,*) __FILE__, __LINE__; call flush(6)
 		endif
 		call dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, zspsc3a(1,:,1),ivset(1:1), 'T', noutdump)
 	endif
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
   !=================================================================================================
   ! Calculate timings
@@ -727,13 +737,13 @@ write (6,*) __FILE__, __LINE__; call flush(6)
 
   if (lprint_norms) then
     if( lstats ) call gstats(6,0)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
     call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
     call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
     call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   
     if ( myproc == 1 ) then
 
@@ -780,7 +790,7 @@ write(nout,'(" ")')
 write(nout,'(a)') '======= End of spectral transforms  ======='
 write(nout,'(" ")')
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 if (lprint_norms .or. ncheck > 0) then
   call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
@@ -1260,8 +1270,9 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   integer :: m_num = 1 ! Zonal wavenumber
   integer :: n_num = 0 ! Meridional wavenumber
   
-  ! Type of initialization: (single) 'harmonic' or (random) 'spectrum'
-  character(len=32) :: init_type='harmonic'    
+  ! Type of initialization: (single) 'harmonic', (random) 'spectrum', or 'zero'
+  character(len=32) :: init_type='spectrum'
+  !character(len=32) :: init_type='harmonic'
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0
@@ -1364,10 +1375,10 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
     close(noutdump)
     
     ! write to screen
-    write(frmt(5:8),'(i4.4)') kgptotg/nlat
-    write (*,*) fldchar,' at iteration ',jstep,':'
-    write (*,frmt) fldg
-    call flush(6)
+    !write(frmt(5:8),'(i4.4)') kgptotg/nlat
+    !write (*,*) fldchar,' at iteration ',jstep,':'
+    !write (*,frmt) fldg
+    !call flush(6)
 	
     deallocate(fldg)
   
@@ -1436,15 +1447,15 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
     write(filename(7:9),'(a3)') 'cpu'
 #endif
     open(noutdump, file=filename, form="unformatted", access="stream")
-	write(noutdump) 2*nmsmax+2,2*nsmax+2  ! dimensions
+	  write(noutdump) 2*nmsmax+2,2*nsmax+2  ! dimensions
     write(noutdump) fld2g             ! data
     close(noutdump)
     
     ! write to screen
-    write(frmt(5:8),'(i4.4)') 2*(nmsmax+1)
-    write (*,*) fldchar,' at iteration ',jstep,':'
-    write (*,frmt) fld2g
-    call flush(6)
+    !write(frmt(5:8),'(i4.4)') 2*(nmsmax+1)
+    !write (*,*) fldchar,' at iteration ',jstep,':'
+    !write (*,frmt) fld2g
+    !call flush(6)
 	
     deallocate(fldg)
   

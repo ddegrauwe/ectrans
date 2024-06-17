@@ -71,6 +71,12 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 IF (LHOOK) CALL DR_HOOK('EASRE1B_MOD:EASRE1B',0,ZHOOK_HANDLE)
 
+#ifdef gnarls
+write (6,*) __FILE__, __LINE__
+write (6,*) 'D_NPROCL = ',D_NPROCL
+write (6,*) 'shape(D_NPNTGTB1) = ',shape(D_NPNTGTB1)
+write (6,*) 'D_NPNTGTB1 = ',D_NPNTGTB1
+#endif
 
 !$acc parallel loop collapse(3) private (JM, JGL, JFLD, IPROC, IISTAN) &
 !$acc& present (PFFT, D_NSTAGT0B, D_NPNTGTB1, D_NPROCL, D_NUMP, R_NDGL, FOUBUF_IN) &

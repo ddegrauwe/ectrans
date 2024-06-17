@@ -42,13 +42,8 @@ IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',0,ZHOOK_HANDLE)
 
 IRLEN=R%NDLON+R%NNOEXTZG
 
-write (*,*) __FILE__, __LINE__; call flush(6)
-write (*,*) 'KF_FS = ',KF_FS
-write (*,*) 'shape(PREEL) = ',shape(PREEL)
-write (*,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
-
-write (*,*) __FILE__, __LINE__; call flush(6)
 LOENS(1)=IRLEN
 JLOT=SIZE(PREEL)/(IRLEN+2)   ! daand: why is it +3, instead of expected +2 ?
 ALLOCATE(OFFSETS(JLOT))
@@ -56,20 +51,21 @@ ALLOCATE(OFFSETS(JLOT))
 DO JJ=1,JLOT
   OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
 ENDDO
-write (*,*) __FILE__, __LINE__; call flush(6)
+! write (*,*) __FILE__, __LINE__; call flush(6)
 
 IF (JLOT==0) THEN
   IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',1,ZHOOK_HANDLE)
   RETURN
 ENDIF
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 
 
 !$ACC DATA PRESENT(PREEL) COPYIN(LOENS,OFFSETS)
 
 #ifdef gnarls
+write (6,*) __FILE__, __LINE__; call flush(6)
 !$acc update host(preel)
 write (*,*) 'performing FFT with batch size ',JLOT,' on data with shape ',IRLEN+2,SIZE(PREEL)/REAL(IRLEN+2)
 write (*,*) 'input:'
@@ -95,7 +91,7 @@ DEALLOCATE(OFFSETS)
 
 !$ACC END DATA
 
-!write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',1,ZHOOK_HANDLE)
 

@@ -147,7 +147,7 @@ IF(NPROMATR > 0) THEN
   stop 24
 ENDIF
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 ! Prepare everything
 ALLOCATOR = MAKE_BUFFERED_ALLOCATOR()
@@ -161,7 +161,7 @@ HELTDIR = PREPARE_ELTDIR(ALLOCATOR, KF_FS, KF_UV)
 CALL INSTANTIATE_ALLOCATOR(ALLOCATOR, GROWING_ALLOCATION)
 
 ! from the PGP arrays to PREEL_REAL
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 CALL TRGTOL(ALLOCATOR,HTRGTOL,PREEL,KF_FS,KF_GP,KF_UV_G,KF_SCALARS_G,&
  & KVSETUV=KVSETUV,KVSETSC=KVSETSC,&
  & KVSETSC3A=KVSETSC3A,KVSETSC3B=KVSETSC3B,KVSETSC2=KVSETSC2,&
@@ -171,25 +171,25 @@ IF (KF_FS > 0) THEN
 
   ! fourier transform from PREEL_REAL to PREEL_COMPLEX (in-place!)
   CALL GSTATS(1640,0)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   CALL EFTDIR(ALLOCATOR,PREEL,KF_FS,AUX_PROC=AUX_PROC)
   CALL GSTATS(1640,1)
 
   CALL GSTATS(153,0)
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   CALL TRLTOM_PACK(ALLOCATOR,HTRLTOM_PACK,PREEL,FOUBUF_IN,KF_FS)    ! formerly known as efourier_out
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   CALL TRLTOM_CUDAAWARE(ALLOCATOR,HTRLTOM,FOUBUF_IN,FOUBUF,KF_FS)
   !CALL TRLTOM_UNPACK(ALLOCATOR,HTRLTOM_UNPACK,FOUBUF,ZINPS,ZINPA,ZINPS0,ZINPA0,KF_FS,KF_UV)
   CALL GSTATS(153,1)
 
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
   CALL ELTDIR(ALLOCATOR,HELTDIR,KF_FS,KF_UV,KF_SCALARS,FOUBUF, &
         & PSPVOR,PSPDIV,PSPSCALAR,&
         & PSPSC3A,PSPSC3B,PSPSC2, &
         & PSPMEANU=PMEANU,PSPMEANV=PMEANV)
-write (6,*) __FILE__, __LINE__; call flush(6)
+! write (6,*) __FILE__, __LINE__; call flush(6)
 
 ENDIF
 

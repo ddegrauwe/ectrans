@@ -88,7 +88,7 @@ PFFT = 0._JPRB
 MAX_NCPL2M = MAXVAL (DALD_NCPL2M)
 
 
-#ifndef gnarls
+#ifdef gnarls
 write (6,*) __FILE__, __LINE__; call flush(6)
 write (6,*) 'shape(PFFT) = ',shape(PFFT)
 write (6,*) 'shape(PSPEC) = ',shape(PSPEC)
@@ -108,14 +108,14 @@ DO JM = 1, D_NUMP
       if (J .LE. ILCM) then
         IOFF = DALD_NESM0(IM)
         INM = IOFF+(J-1)*2
-        !write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+0,') -> PFFT(',J  ,JM,IR,')'
-        !write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+1,') -> PFFT(',J+1,JM,IR,')'
-        !write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+2,') -> PFFT(',J  ,JM,II,')'
-        !write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+3,') -> PFFT(',J+1,JM,II,')'
-        PFFT(J  ,JM,IR) = PSPEC(JFLDPTR(JFLD),INM  )
-        PFFT(J+1,JM,IR) = PSPEC(JFLDPTR(JFLD),INM+1)
-        PFFT(J  ,JM,II) = PSPEC(JFLDPTR(JFLD),INM+2)
-        PFFT(J+1,JM,II) = PSPEC(JFLDPTR(JFLD),INM+3)
+        write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+0,') -> PFFT(',J  ,JM,IR,')'
+        write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+1,') -> PFFT(',J+1,JM,IR,')'
+        write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+2,') -> PFFT(',J  ,JM,II,')'
+        write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+3,') -> PFFT(',J+1,JM,II,')'
+        !PFFT(J  ,JM,IR) = PSPEC(JFLDPTR(JFLD),INM  )
+        !PFFT(J+1,JM,IR) = PSPEC(JFLDPTR(JFLD),INM+1)
+        !PFFT(J  ,JM,II) = PSPEC(JFLDPTR(JFLD),INM+2)
+        !PFFT(J+1,JM,II) = PSPEC(JFLDPTR(JFLD),INM+3)
       endif
     ENDDO
   ENDDO
