@@ -427,8 +427,8 @@ zspdiv  => sp3d(:,:,2)
 zspsc3a => sp3d(:,:,3:3+(nfld-1))
 
 ! WARNING: setting to zero to trace problem in V/D->U/V
-zspsc3a(:,:,:)=-999.*zspsc3a(:,:,:)
-zspsc2=-777.*zspsc2
+!zspsc3a(:,:,:)=3.*zspsc3a(:,:,:)
+!zspsc2=-777.*zspsc2
 
 !===================================================================================================
 ! Allocate gridpoint arrays
@@ -1250,6 +1250,7 @@ subroutine initialize_spectral_arrays(nsmax, nmsmax, zsp, sp3d)
   do i = 1, nflevl
     do j = 1, nfield
       call initialize_2d_spectral_field(nsmax, nmsmax, sp3d(i,:,j))
+      sp3d(i,:,j)=(j-1)*nflevl+i+sp3d(i,:,j)   ! make identifiable; only for index type
     end do
   end do
 
@@ -1270,8 +1271,9 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   integer :: m_num = 1 ! Zonal wavenumber
   integer :: n_num = 0 ! Meridional wavenumber
   
-  ! Type of initialization: (single) 'harmonic', (random) 'spectrum', or 'zero'
+  ! Type of initialization: (single) 'harmonic', (random) 'spectrum', 'zero' or 'index'
   character(len=32) :: init_type='spectrum'
+  !character(len=32) :: init_type='index'
   !character(len=32) :: init_type='harmonic'
 
   ! First initialise all spectral coefficients to zero
@@ -1294,6 +1296,15 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   call etrans_inq(kspec2=kspec2)
   allocate(my_kn(kspec2),my_km(kspec2))
   call etrans_inq(knvalue=my_kn,kmvalue=my_km)
+  
+#ifdef gnarls
+  write (6,*) __FILE__, __LINE__
+  write (6,*) 'my_km = '
+  write (6,'(4I6)') my_km
+  write (6,*) 'my_kn = '
+  write (6,'(4I6)') my_kn
+  call flush(6)
+#endif
 
   ! If rank is responsible for the chosen zonal wavenumber...
   if ( init_type == 'harmonic' ) then
@@ -1304,6 +1315,17 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
         !field(ispec+2)=1.0 ! sin*cos
         !field(ispec+3)=1.0 ! sin*sin
       end if
+    enddo
+  endif
+
+  ! set wavenumbers according to indices : 0.xyz
+  if ( init_type == 'index' ) then
+    field(:)=0./0.
+    do ispec=1,nspec2,4
+      field(ispec)=(my_km(ispec)/1000.) + (my_kn(ispec)/100000.) + 0.1 ! cos*cos
+      field(ispec+1)=(my_km(ispec)/1000.) + (my_kn(ispec)/100000.) + 0.2 ! cos*cos
+      field(ispec+2)=(my_km(ispec)/1000.) + (my_kn(ispec)/100000.) + 0.3 ! cos*cos
+      field(ispec+3)=(my_km(ispec)/1000.) + (my_kn(ispec)/100000.) + 0.4 ! cos*cos
     enddo
   endif
 

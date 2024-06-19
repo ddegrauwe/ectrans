@@ -161,7 +161,7 @@ void execute_fft_new(typename Type::real *data_real, typename Type::cmplx *data_
             //fftSafeCall(hipfftPlanMany(&plan, 1, &nloen, embed, 1, dist, embed,
             //                          1, dist / 2, Direction, kfield));
             fftSafeCall(hipfftPlanMany(&plan, 1, &nloen, embed, 1, is_forward ? dist : dist / 2, embed,
-                                      1, is_forward ? dist / 2 : dist, Direction, kfield));
+                                      1, is_forward ? dist / 2 : dist, Direction, abs(kfield)));
             newPlans[i] = plan;
           }
           fftPlansCache.insert({kfield, newPlans});
@@ -180,8 +180,8 @@ void execute_fft_new(typename Type::real *data_real, typename Type::cmplx *data_
       hipGraphCreate(&new_graph, 0);
       for (int i = 0; i < nfft; ++i) {
         int offset = offsets[i];
-        real *data_real_l = &data_real[kfield * offset];
-        cmplx *data_complex_l = &data_complex[kfield * offset / 2];
+        real *data_real_l = &data_real[abs(kfield) * offset];
+        cmplx *data_complex_l = &data_complex[abs(kfield) * offset / 2];
         HIC_CHECK(hipStreamBeginCapture(stream, hipStreamCaptureModeGlobal));
         if constexpr(Direction == HIPFFT_R2C)
           fftSafeCall(hipfftExecR2C(fftPlans->second[i], data_real_l, data_complex_l));

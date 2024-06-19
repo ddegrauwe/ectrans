@@ -63,6 +63,7 @@ INTEGER(KIND=JPIM) :: II, INM, IR, J, JFLD, ILCM, IOFF,IFLD
 INTEGER(KIND=JPIM) :: IM, JM, MAX_NCPL2M
 INTEGER(KIND=JPIM) :: JFLDPTR(KFIELDS)
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+character(len=64) :: frmt
 
 !     ------------------------------------------------------------------
 
@@ -97,6 +98,12 @@ write (6,*) 'KFIELDS = ',KFIELDS
 write (6,*) 'MAX_NCPL2M = ',MAX_NCPL2M
 write (6,*) 'JFLDPTR = ',JFLDPTR
 write (6,*) 'DALD_NCPL2M = ',DALD_NCPL2M
+write (6,*) 'DALD_NESM0 = ',DALD_NESM0
+
+!$acc update host(PSPEC)
+write (6,*) 'PSPEC = '
+write (frmt,*) '(',SHAPE(PSPEC,1),'F10.5)'
+write (6,frmt) PSPEC
 
 DO JM = 1, D_NUMP
   DO JFLD=1,KFIELDS
@@ -108,18 +115,23 @@ DO JM = 1, D_NUMP
       if (J .LE. ILCM) then
         IOFF = DALD_NESM0(IM)
         INM = IOFF+(J-1)*2
-        write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+0,') -> PFFT(',J  ,JM,IR,')'
-        write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+1,') -> PFFT(',J+1,JM,IR,')'
-        write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+2,') -> PFFT(',J  ,JM,II,')'
-        write (6,*) 'PSPEC(',JFLDPTR(JFLD),INM+3,') -> PFFT(',J+1,JM,II,')'
-        !PFFT(J  ,JM,IR) = PSPEC(JFLDPTR(JFLD),INM  )
-        !PFFT(J+1,JM,IR) = PSPEC(JFLDPTR(JFLD),INM+1)
-        !PFFT(J  ,JM,II) = PSPEC(JFLDPTR(JFLD),INM+2)
-        !PFFT(J+1,JM,II) = PSPEC(JFLDPTR(JFLD),INM+3)
+        write (6,'(A,I,I,I,A,I,I,A,F10.2)') 'PFFT(',J  ,JM,IR,') <- PSPEC(',JFLDPTR(JFLD),INM+0,') = ',PSPEC(JFLDPTR(JFLD),INM+0)
+        write (6,'(A,I,I,I,A,I,I,A,F10.2)') 'PFFT(',J+1,JM,IR,') <- PSPEC(',JFLDPTR(JFLD),INM+0,') = ',PSPEC(JFLDPTR(JFLD),INM+1)
+        write (6,'(A,I,I,I,A,I,I,A,F10.2)') 'PFFT(',J  ,JM,II,') <- PSPEC(',JFLDPTR(JFLD),INM+0,') = ',PSPEC(JFLDPTR(JFLD),INM+2)
+        write (6,'(A,I,I,I,A,I,I,A,F10.2)') 'PFFT(',J+1,JM,II,') <- PSPEC(',JFLDPTR(JFLD),INM+0,') = ',PSPEC(JFLDPTR(JFLD),INM+3)
+        PFFT(J  ,JM,IR) = PSPEC(JFLDPTR(JFLD),INM  )
+        PFFT(J+1,JM,IR) = PSPEC(JFLDPTR(JFLD),INM+1)
+        PFFT(J  ,JM,II) = PSPEC(JFLDPTR(JFLD),INM+2)
+        PFFT(J+1,JM,II) = PSPEC(JFLDPTR(JFLD),INM+3)
       endif
     ENDDO
   ENDDO
 ENDDO
+
+write (6,*) 'PFFT = '
+write (frmt,*) '(',SHAPE(PFFT,1),'F10.5)'
+write (6,frmt) PFFT
+
 call flush(6)
 #endif
 
@@ -148,6 +160,8 @@ DO JM = 1, D_NUMP
   ENDDO
 ENDDO
 !$acc end data
+
+
 
 IF (LHOOK) CALL DR_HOOK('EPRFI1B_MOD:EPRFI1B',1,ZHOOK_HANDLE)
 

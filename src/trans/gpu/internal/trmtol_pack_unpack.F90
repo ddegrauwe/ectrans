@@ -238,11 +238,13 @@ TYPE(TRMTOL_UNPACK_HANDLE), INTENT(IN) :: HTRMTOL_UNPACK
 
 INTEGER(KIND=JPIM) :: JM,JF,IGLG,ISTA,OFFSET_VAR,IOFF_LAT,KGL
 REAL(KIND=JPRBT) :: RET_REAL, RET_COMPLEX
+character(len=64) :: frmt
 
-
+#ifdef gnarls
 write (6,*) __FILE__, __LINE__
 write (6,*) 'allocating PREEL with dimensions D%NLENGTF = ',D%NLENGTF,'; KF_TOTAL = ',KF_TOTAL
 call flush(6)
+#endif
 
 CALL ASSIGN_PTR(PREEL_COMPLEX, GET_ALLOCATION(ALLOCATOR, HTRMTOL_UNPACK%HREEL),&
     & 1_C_SIZE_T, int(KF_TOTAL*D%NLENGTF*SIZEOF(PREEL_COMPLEX(1)),kind=c_size_t))
@@ -294,13 +296,22 @@ ENDDO
 #endif
 
 
-write (6,*) __FILE__, __LINE__; call flush(6)
-write (6,*) 'D_NDGL_FS = ',D_NDGL_FS
-write (6,*) 'KF_CURRENT = ',KF_CURRENT
-write (6,*) 'G_NLOEN_MAX/2 = ',G_NLOEN_MAX/2
-write (6,*) 'G_NLOEN_MAX/2 = ',G_NLOEN_MAX/2
+
 #ifdef gnarls
 !$acc update host(foubuf)
+write (6,*) __FILE__, __LINE__; call flush(6)
+write (6,*) 'KF_CURRENT = ',KF_CURRENT
+write (6,*) 'D_NDGL_FS = ',D_NDGL_FS
+write (6,*) 'D_NLENGTF = ',D%NLENGTF
+write (6,*) 'G_NLOEN_MAX/2 = ',G_NLOEN_MAX/2
+write (6,*) 'D_NPNTGTB0 ='
+write (frmt,*) '(',SIZE(D_NPNTGTB0,1),'I6)'
+write (6,frmt) D_NPNTGTB0
+write (6,*) 'FOUBUF = '
+write (frmt,*) '(',2*KF_CURRENT,'F10.5)'
+write (6,frmt) FOUBUF
+
+PREEL_COMPLEX=-123.
 DO KGL=1,D_NDGL_FS
   DO JF=1,KF_CURRENT
     DO JM=0,G_NLOEN_MAX/2
@@ -319,11 +330,11 @@ DO KGL=1,D_NDGL_FS
           RET_REAL    = FOUBUF(ISTA+2*JF-1)
           RET_COMPLEX = FOUBUF(ISTA+2*JF  )
           
-          write (6,*) 'FOUBUF(',ISTA+2*JF-1,') = ',FOUBUF(ISTA+2*JF-1),'-> PREEL(',IOFF_LAT+2*JM+1,')'
-          write (6,*) 'FOUBUF(',ISTA+2*JF,') = ',FOUBUF(ISTA+2*JF),'-> PREEL(',IOFF_LAT+2*JM+2,')'
+          write (6,'(A,I,A,F10.5,A,I,A)') 'FOUBUF(',ISTA+2*JF-1,') = ',FOUBUF(ISTA+2*JF-1),'-> PREEL(',IOFF_LAT+2*JM+1,')'
+          write (6,'(A,I,A,F10.5,A,I,A)') 'FOUBUF(',ISTA+2*JF,') = ',FOUBUF(ISTA+2*JF),'-> PREEL(',IOFF_LAT+2*JM+2,')'
         ELSE
-          write (6,*) '0.0 -> PREEL(',IOFF_LAT+2*JM+1,')'
-          write (6,*) '0.0 -> PREEL(',IOFF_LAT+2*JM+2,')'
+          write (6,'(A,I,A)') '0.0 -> PREEL(',IOFF_LAT+2*JM+1,')'
+          write (6,'(A,I,A)') '0.0 -> PREEL(',IOFF_LAT+2*JM+2,')'
         ENDIF
         PREEL_COMPLEX(IOFF_LAT+2*JM+1) = RET_REAL
         PREEL_COMPLEX(IOFF_LAT+2*JM+2) = RET_COMPLEX
@@ -331,6 +342,12 @@ DO KGL=1,D_NDGL_FS
     ENDDO
   ENDDO
 ENDDO
+
+
+write (6,*) 'PREEL = '
+write (frmt,*) '(',D%NLENGTF/D_NDGL_FS,'F10.5)'
+write (6,frmt) PREEL_COMPLEX
+
 call flush(6)
 #endif
 

@@ -28,7 +28,7 @@ EXTERNAL AUX_PROC
 OPTIONAL AUX_PROC
 
 INTEGER(KIND=JPIM) :: JLOT, IRLEN, JJ
-INTEGER(KIND=JPIM), ALLOCATABLE :: OFFSETS(:)
+INTEGER(KIND=JPIM) :: OFFSETS(2)
 INTEGER(KIND=JPIM) :: LOENS(1)
 integer :: istat
 character(len=32) :: cfrmt
@@ -68,9 +68,8 @@ ENDIF
 ! write (6,*) __FILE__, __LINE__; call flush(6)
 LOENS(1)=IRLEN
 JLOT=SIZE(PREEL)/(IRLEN+2)
-ALLOCATE(OFFSETS(JLOT))
 ! compute offsets; TODO: avoid recomputing/putting on device every time.
-DO JJ=1,JLOT
+DO JJ=1,SIZE(OFFSETS)
   OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
 ENDDO
 ! write (6,*) __FILE__, __LINE__; call flush(6)
@@ -90,7 +89,7 @@ ENDIF
 !$acc update host(preel)
 write (*,*) 'performing FFT with batch size ',JLOT,' on data with shape ',IRLEN+2,SIZE(PREEL)/REAL(IRLEN+2)
 write (*,*) 'input:'
-write (cfrmt,*) '(4X,',IRLEN+2,'F8.2)'
+write (cfrmt,*) '(4X,',IRLEN+2,'F10.5)'
 write (*,cfrmt) PREEL
 call flush(6)
 #endif
@@ -105,12 +104,10 @@ CALL EXECUTE_DIR_FFT(PREEL(:),PREEL(:),JLOT, &
 #ifdef gnarls
 !$acc update host(preel)
 write (*,*) 'output:'
-write (cfrmt,*) '(4X,',IRLEN+2,'F8.2)'
+write (cfrmt,*) '(4X,',IRLEN+2,'F10.5)'
 write (*,cfrmt) PREEL
 call flush(6)
 #endif
-
-DEALLOCATE(OFFSETS)
 
 !$ACC END DATA
 
