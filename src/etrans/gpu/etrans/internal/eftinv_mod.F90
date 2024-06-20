@@ -72,7 +72,7 @@ write (*,cfrmt) PREEL
 call flush(6)
 #endif
 
-#ifndef gnarls
+#ifdef gnarls
 CALL EXECUTE_INV_FFT(PREEL(:),PREEL(:),JLOT, &
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)

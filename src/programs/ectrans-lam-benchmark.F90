@@ -414,8 +414,8 @@ nullify(zspsc3a)
 allocate(sp3d(nflevl,nspec2,2+nfld))
 allocate(zspsc2(1,nspec2))
 allocate(zmeanu(nflevl),zmeanv(nflevl))
-zmeanu(:)=0._jprb
-zmeanv(:)=0._jprb
+zmeanu(:)=1._jprb
+zmeanv(:)=2._jprb
 
 ! write (6,*) __FILE__, __LINE__; call flush(6)
 call initialize_spectral_arrays(nsmax, nmsmax, zspsc2, sp3d)
@@ -1250,7 +1250,7 @@ subroutine initialize_spectral_arrays(nsmax, nmsmax, zsp, sp3d)
   do i = 1, nflevl
     do j = 1, nfield
       call initialize_2d_spectral_field(nsmax, nmsmax, sp3d(i,:,j))
-      sp3d(i,:,j)=(j-1)*nflevl+i+sp3d(i,:,j)   ! make identifiable; only for index type
+      !sp3d(i,:,j)=(j-1)*nflevl+i+sp3d(i,:,j)   ! make identifiable; only for index type
     end do
   end do
 
@@ -1272,9 +1272,9 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   integer :: n_num = 0 ! Meridional wavenumber
   
   ! Type of initialization: (single) 'harmonic', (random) 'spectrum', 'zero' or 'index'
-  character(len=32) :: init_type='spectrum'
+  !character(len=32) :: init_type='spectrum'
   !character(len=32) :: init_type='index'
-  !character(len=32) :: init_type='harmonic'
+  character(len=32) :: init_type='harmonic'
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0

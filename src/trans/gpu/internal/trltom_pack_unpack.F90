@@ -81,6 +81,7 @@ CONTAINS
     TYPE(TRLTOM_PACK_HANDLE), INTENT(IN) :: HTRLTOM_PACK
 
     INTEGER(KIND=JPIM) :: JM,JF,IGLG,ISTA,OFFSET_VAR,IOFF_LAT,KGL
+    character(len=64) :: frmt
 
     REAL(KIND=JPRBT)    :: SCAL
 
@@ -111,7 +112,11 @@ CONTAINS
           IF (JM <= G_NMEN(IGLG)) THEN
             IOFF_LAT = KF_FS*D_NSTAGTF(KGL)+(JF-1)*(D_NSTAGTF(KGL+1)-D_NSTAGTF(KGL))
 
+#ifndef gnarls
+            SCAL = 1._JPRBT
+#else
             SCAL = 1._JPRBT/REAL(G_NLOEN(IGLG),JPRBT)
+#endif
             ISTA  = D_NPNTGTB0(JM,KGL)*KF_FS*2
 
             FOUBUF_IN(ISTA+2*JF-1) = SCAL * PREEL_COMPLEX(IOFF_LAT+2*JM+1)
@@ -132,7 +137,9 @@ CONTAINS
 #ifdef gnarls
 !$acc update host(PREEL_COMPLEX)
 write (6,*) __FILE__, __LINE__; call flush(6)
-write (6,*) 'PREEL = ',PREEL_COMPLEX
+write (6,*) 'PREEL = '
+write (frmt,*) '(',D%NLENGTF/D%NDGL_FS,'F10.2)'
+write (6,frmt) PREEL_COMPLEX
 write (6,*) 'D_NDGL_FS = ',D_NDGL_FS
 write (6,*) 'R_NSMAX = ',R_NSMAX
 write (6,*) 'KF_FS = ',KF_FS
@@ -146,20 +153,26 @@ write (6,*) 'OFFSET_VAR = ',OFFSET_VAR
           IF (JM <= G_NMEN(IGLG)) THEN
             IOFF_LAT = KF_FS*D_NSTAGTF(KGL)+(JF-1)*(D_NSTAGTF(KGL+1)-D_NSTAGTF(KGL))
 
+#ifndef gnarls
+            SCAL = 1._JPRBT
+#else
             SCAL = 1._JPRBT/REAL(G_NLOEN(IGLG),JPRBT)
+#endif
             ISTA  = D_NPNTGTB0(JM,KGL)*KF_FS*2
 
             FOUBUF_IN(ISTA+2*JF-1) = SCAL * PREEL_COMPLEX(IOFF_LAT+2*JM+1)
             FOUBUF_IN(ISTA+2*JF  ) = SCAL * PREEL_COMPLEX(IOFF_LAT+2*JM+2)
             
-            write (6,*) 'PREEL(',IOFF_LAT+2*JM+1,') -> FOUBUF_IN(',ISTA+2*JF-1,')'
-            write (6,*) 'PREEL(',IOFF_LAT+2*JM+2,') -> FOUBUF_IN(',ISTA+2*JF,')'
+            write (6,'(A,I,A,I,A,F10.5)') 'FOUBUF_IN(',ISTA+2*JF-1,') <- PREEL(',IOFF_LAT+2*JM+1,') = ',PREEL_COMPLEX(IOFF_LAT+2*JM+1)
+            write (6,'(A,I,A,I,A,F10.5)') 'FOUBUF_IN(',ISTA+2*JF  ,') <- PREEL(',IOFF_LAT+2*JM+2,') = ',PREEL_COMPLEX(IOFF_LAT+2*JM+2)
           ENDIF
         ENDDO
       ENDDO
     ENDDO
 call flush(6)
-write (6,*) 'FOUBUF_IN = ',FOUBUF_IN
+write (6,*) 'FOUBUF_IN = '
+write (frmt,*) '(',2*KF_FS,'F10.2)'
+write (6,frmt) FOUBUF_IN
 
 #endif
   END SUBROUTINE TRLTOM_PACK

@@ -169,16 +169,16 @@ ENDIF
 ILEI2 = 8*KF_UV + 2*KF_SCALARS + 2*KF_SCDERS
 IDIM1 = 2*KF_OUT_LT
 
-
+#ifdef gnarls
 write (6,*) __FILE__, __LINE__
 write( 6,*) 'KF_FS = ',KF_FS
 write (6,*) 'KF_OUT_LT = ',KF_OUT_LT
 write (6,*) 'D%NUMP = ',D%NUMP
 write (6,*) 'D%NDGL_FS = ',D%NDGL_FS
 call flush(6)
+#endif
 
-#ifndef gnarls
-! daand: manual allocation of foubuf and foubuf_in, because using allocator leads to errors in TRLTOM mpi communications !?!?
+#ifdef gnarls
 IBLEN=MAX(1,D%NLENGT1B*2*KF_OUT_LT)
 IF (ALLOCATED(FOUBUF_IN)) THEN
   IF (IBLEN > SIZE(FOUBUF_IN)) THEN
@@ -311,11 +311,13 @@ write (6,*) 'PGP2 = '
 write (6,'(4F10.5)')  PGP2
 write (6,*) 'PGP3A = '
 write (6,'(4F10.5)')  PGP3A
+write (6,*) 'PGPUV = '
+write (6,'(4F10.5)')  PGPUV
 call flush(6)
 #endif
 
-write (6,*) __FILE__, __LINE__
-call flush(6)
+!write (6,*) __FILE__, __LINE__
+!call flush(6)
 
 IF (LHOOK) CALL DR_HOOK('EINV_TRANS_CTL_MOD:EINV_TRANS_CTL',1,ZHOOK_HANDLE)
 

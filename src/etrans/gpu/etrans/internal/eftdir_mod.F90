@@ -86,6 +86,7 @@ ENDIF
 !$ACC DATA PRESENT(PREEL) COPYIN(LOENS,OFFSETS)
 
 #ifdef gnarls
+write (6,*) __FILE__, __LINE__; call flush(6)
 !$acc update host(preel)
 write (*,*) 'performing FFT with batch size ',JLOT,' on data with shape ',IRLEN+2,SIZE(PREEL)/REAL(IRLEN+2)
 write (*,*) 'input:'
@@ -95,11 +96,12 @@ call flush(6)
 #endif
 
 ! write (6,*) __FILE__, __LINE__; call flush(6)
+#ifdef gnarls
 CALL EXECUTE_DIR_FFT(PREEL(:),PREEL(:),JLOT, &
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
 ! write (6,*) __FILE__, __LINE__; call flush(6)
-
+#endif
 
 #ifdef gnarls
 !$acc update host(preel)

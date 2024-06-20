@@ -112,7 +112,7 @@ ENDIF
 
 !$ACC DATA PRESENT(PFFT) COPYIN(LOENS,OFFSETS)
 
-#ifdef gnarls
+#ifndef gnarls
 !$acc update host(pfft)
 write (6,*) __FILE__, __LINE__; call flush(6)
 write (*,*) 'performing FFT with batch size ',JLOT,' on data with shape ',shape(PFFT)
@@ -122,10 +122,11 @@ write (*,cfrmt) PFFT
 call flush(6)
 #endif
 
+#ifdef gnarls
 CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &    ! -JLOT to have hicfft make distinction between zonal and meridional direction. Don't worry, abs(JLOT) is used internally ...
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
-
+#endif
 
 #ifdef gnarls
 !$acc update host(pfft)

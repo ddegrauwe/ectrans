@@ -60,7 +60,7 @@ USE TPM_DIM         ,ONLY : R
 USE TPM_DISTR       ,ONLY : D, NPRCIDS, NPRTRW, MYSETV, MYSETW, MYPROC, NPROC
 USE TPM_DISTR       ,ONLY : D_NUMP,D_MYMS
 USE TPMALD_GEO      ,ONLY : GALD
-USE TPMALD_DISTR    ,ONLY : DALD
+USE TPMALD_DISTR    ,ONLY : DALD, DALD_NCPL2M
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 !
 
@@ -86,7 +86,7 @@ IF (LHOOK) CALL DR_HOOK('EUVTVD_MOD:EUVTVD',0,ZHOOK_HANDLE)
 !              ------------------------------------------
 
 
-!$acc parallel loop collapse(3) private(J,JM,JN,IR,II,IM,ZKM) present (PVOR, PDIV, PU, PV)
+!$acc parallel loop collapse(3) private(J,JM,JN,IR,II,IM,ZKM) present (PVOR, PDIV, PU, PV,D_MYMS,D_NUMP)
 DO J=1,KFIELD
   DO JM=1,D_NUMP
     DO JN=1,R%NDGL+R%NNOEXTZG
@@ -105,17 +105,24 @@ ENDDO
 
 JNMAX = MAXVAL(DALD%NCPL2M)
 
-!$acc parallel loop collapse(3) private(J,JM,JN,IM,ZIN,IN) copyin (JNMAX) present (PVOR, PDIV, PU, PV)
+!$acc parallel loop collapse(3) private(J,JM,JN,IM,ZIN,IN) copyin (JNMAX) present (PVOR, PDIV, PU, PV,DALD_NCPL2M)
 DO J=1,2*KFIELD
   DO JM=1,D_NUMP
     DO JN=1,JNMAX,2
       IM = D_MYMS(JM)
-      IN=(JN-1)/2
-      ZIN=REAL(IN,JPRB)*GALD%EYWN
-      PVOR(JN  ,JM,J)=PVOR(JN  ,JM,J)+ZIN*PU(JN+1,JM,J)
-      PVOR(JN+1,JM,J)=PVOR(JN+1,JM,J)-ZIN*PU(JN  ,JM,J)
-      PDIV(JN  ,JM,J)=PDIV(JN  ,JM,J)-ZIN*PV(JN+1,JM,J)
-      PDIV(JN+1,JM,J)=PDIV(JN+1,JM,J)+ZIN*PV(JN  ,JM,J)
+!      IF ( JN <= DALD_NCPL2M(IM) ) THEN
+        IN=(JN-1)/2
+        ZIN=REAL(IN,JPRB)*GALD%EYWN
+        PVOR(JN  ,JM,J)=PVOR(JN  ,JM,J)+ZIN*PU(JN+1,JM,J)
+        PVOR(JN+1,JM,J)=PVOR(JN+1,JM,J)-ZIN*PU(JN  ,JM,J)
+        PDIV(JN  ,JM,J)=PDIV(JN  ,JM,J)-ZIN*PV(JN+1,JM,J)
+        PDIV(JN+1,JM,J)=PDIV(JN+1,JM,J)+ZIN*PV(JN  ,JM,J)
+      ! ELSE
+        ! PVOR(JN  ,JM,J)=0._JPRB
+        ! PVOR(JN+1,JM,J)=0._JPRB
+        ! PDIV(JN  ,JM,J)=0._JPRB
+        ! PDIV(JN+1,JM,J)=0._JPRB
+      ! ENDIF
     ENDDO
   ENDDO
 ENDDO

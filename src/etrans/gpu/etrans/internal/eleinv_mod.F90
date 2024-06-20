@@ -123,7 +123,7 @@ write (*,cfrmt) PFFT
 call flush(6)
 #endif
 
-#ifndef gnarls
+#ifdef gnarls
 CALL EXECUTE_INV_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &
     & LOENS, &
     & OFFSETS,ALLOCATOR%PTR)

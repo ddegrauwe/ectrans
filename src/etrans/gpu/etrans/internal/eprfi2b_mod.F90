@@ -76,7 +76,12 @@ IF (LHOOK) CALL DR_HOOK('EPRFI2B_MOD:EPRFI2B',0,ZHOOK_HANDLE)
 !*       1.    EXTRACT SYM./ANTISYM. FIELDS FROM FOURIER ARRAY.
 !              ------------------------------------------------
 
+#ifndef gnarls
+SCAL=1._JPRB  ! for testing only!!!
+#else
 SCAL=1._JPRB/REAL(R_NDGL,JPRB)
+
+#endif
 
 !$acc data &
 !$acc& present(PFFT) &
