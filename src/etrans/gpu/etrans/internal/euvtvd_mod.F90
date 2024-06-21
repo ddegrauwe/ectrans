@@ -105,23 +105,6 @@ ENDDO
 !$acc end parallel loop
 
 JNMAX = MAXVAL(DALD%NCPL2M)
-#ifdef gnarls
-write (6,*) __FILE__, __LINE__
-!$acc update host (PVOR,PU,PV)
-DO JM=1,D_NUMP
-  IM = D_MYMS(JM)
-  IF (IM==0 .OR. IM==1) THEN
-    write (frmt,*) '(',10,'F10.5)'
-    write (6,*) 'PU at IM = ',IM
-    write (6,frmt) PU(1:10,JM,1:2)
-    write (6,*) 'PV at IM = ',IM
-    write (6,frmt) PV(1:10,JM,1:2)
-    write (6,*) 'PVOR at IM = ',IM
-    write (6,frmt) PVOR(1:10,JM,1)
-  ENDIF
-ENDDO
-
-#endif
 
 !$acc parallel loop collapse(3) private(J,JM,JN,IM,ZIN,IN) copyin (JNMAX) present (PVOR, PDIV, PU, PV,DALD_NCPL2M)
 DO J=1,2*KFIELD
@@ -146,18 +129,6 @@ DO J=1,2*KFIELD
 ENDDO
 !$acc end parallel loop
 
-#ifdef gnarls
-write (6,*) __FILE__, __LINE__
-!$acc update host (PVOR)
-DO JM=1,D_NUMP
-  IM = D_MYMS(JM)
-  IF (IM==0 .OR. IM==1) THEN
-    write (6,*) 'PVOR at IM = ',IM
-    write (frmt,*) '(',10,'F10.5)'
-    write (6,frmt) PVOR(1:10,JM,1:2)
-  ENDIF
-ENDDO
-#endif
 IF (LHOOK) CALL DR_HOOK('EUVTVD_MOD:EUVTVD',1,ZHOOK_HANDLE)
 
 END SUBROUTINE EUVTVD

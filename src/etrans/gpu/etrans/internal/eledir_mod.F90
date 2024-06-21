@@ -78,10 +78,6 @@ REAL (KIND=JPRB)   :: ZSCAL
 REAL (KIND=JPRB), POINTER :: ZFFT_L(:)  ! 1D copy
 INTEGER(KIND=JPIM) :: OFFSETS(2)   ! daand: why isn't OFFSETS(1) not enough?
 INTEGER(KIND=JPIM) :: LOENS(1)
-integer :: istat
-integer(kind=jpim) :: im, jm
-character(len=32) :: frmt
-
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
@@ -107,40 +103,11 @@ IF (JLOT==0) THEN
   RETURN
 ENDIF
 
-!write (6,*) __FILE__, __LINE__; call flush(6)
-
-
-
 !$ACC DATA PRESENT(PFFT) COPYIN(LOENS,OFFSETS)
-
-#ifdef gnarls
-!$acc update host(pfft)
-write (6,*) __FILE__, __LINE__; call flush(6)
-write (6,*) 'performing FFT with batch size ',JLOT,' on data with shape ',shape(PFFT)
-write (6,*) 'input:'
-write (frmt,*) '(4X,',UBOUND(PFFT,1),'F10.5)'
-write (*,frmt) PFFT
-call flush(6)
-#endif
-
-#ifndef gnarls
 CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &    ! -JLOT to have hicfft make distinction between zonal and meridional direction. Don't worry, abs(JLOT) is used internally ...
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
-#endif
-
-#ifdef gnarls
-!$acc update host(pfft)
-write (6,*) __FILE__, __LINE__; call flush(6)
-write (6,*) 'output:'
-write (frmt,*) '(4X,',UBOUND(PFFT,1),'F10.5)'
-write (*,frmt) PFFT
-call flush(6)
-#endif
-
 !$ACC END DATA
-
-!write (6,*) __FILE__, __LINE__; call flush(6)
 
 IF (LHOOK) CALL DR_HOOK('ELEDIR_MOD:ELEDIR',1,ZHOOK_HANDLE)
 

@@ -35,11 +35,7 @@ IF(.NOT.D%LGRIDONLY) THEN
   LLP2 = NPRINTLEV>1
   IF(LLP1) WRITE(NOUT,*) '=== ENTER ROUTINE SUEFFT ==='
   
-  ! write (6,*) __FILE__, __LINE__; call flush(6)
   CALL INIT_PLANS_FFT(2)   ! number of FFT lengths to allocate: one for zonal, one for meridional
-  ! write (6,*) __FILE__, __LINE__; call flush(6)
-  
-  
 
 ENDIF
 

@@ -59,61 +59,24 @@ IF (PRESENT(AUX_PROC)) THEN
 ENDIF
 
 
-! write (6,*) __FILE__, __LINE__; call flush(6)
-! write (6,*) 'KF_FS = ',KF_FS
-! write (6,*) 'shape(PREEL) = ',shape(PREEL)
-! write (6,*) __FILE__, __LINE__; call flush(6)
-
-
-! write (6,*) __FILE__, __LINE__; call flush(6)
 LOENS(1)=IRLEN
 JLOT=SIZE(PREEL)/(IRLEN+2)
 ! compute offsets; TODO: avoid recomputing/putting on device every time.
 DO JJ=1,SIZE(OFFSETS)
   OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
 ENDDO
-! write (6,*) __FILE__, __LINE__; call flush(6)
 
 IF (JLOT==0) THEN
   IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',1,ZHOOK_HANDLE)
   RETURN
 ENDIF
 
-! write (6,*) __FILE__, __LINE__; call flush(6)
-
-
-
 !$ACC DATA PRESENT(PREEL) COPYIN(LOENS,OFFSETS)
-
-#ifdef gnarls
-write (6,*) __FILE__, __LINE__; call flush(6)
-!$acc update host(preel)
-write (6,*) 'performing FFT with batch size ',JLOT,' on data with shape ',IRLEN+2,SIZE(PREEL)/REAL(IRLEN+2)
-write (6,*) 'input:'
-write (cfrmt,*) '(4X,',IRLEN+2,'F10.5)'
-write (*,cfrmt) PREEL
-call flush(6)
-#endif
-
-! write (6,*) __FILE__, __LINE__; call flush(6)
-#ifndef gnarls
 CALL EXECUTE_DIR_FFT(PREEL(:),PREEL(:),JLOT, &
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
-! write (6,*) __FILE__, __LINE__; call flush(6)
-#endif
-
-#ifdef gnarls
-!$acc update host(preel)
-write (6,*) 'output:'
-write (cfrmt,*) '(4X,',IRLEN+2,'F10.5)'
-write (*,cfrmt) PREEL
-call flush(6)
-#endif
 
 !$ACC END DATA
-
-! write (6,*) __FILE__, __LINE__; call flush(6)
 
 IF (LHOOK) CALL DR_HOOK('EFTDIR_MOD:EFTDIR',1,ZHOOK_HANDLE)
 

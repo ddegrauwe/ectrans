@@ -147,7 +147,6 @@ INTEGER(KIND=JPIM) :: IUS,IVS,IVORS,IDIVS, IUE, IVE, IVORE, IDIVE
 REAL(KIND=JPRB), POINTER :: ZFFT(:,:,:), ZFFT_L(:)
 REAL(KIND=JPRB), POINTER :: ZVODI(:,:,:), ZVODI_L(:)
 INTEGER(KIND=C_SIZE_T) :: IALLOC_SZ, IALLOC_POS
-character(len=32) :: frmt
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
@@ -172,19 +171,6 @@ IALLOC_POS = IALLOC_POS + IALLOC_SZ
 !            --------------------
 
 CALL EPRFI2B(KF_FS,ZFFT,FOUBUF)
-
-#ifdef gnarls
-write (6,*) __FILE__, __LINE__
-!$acc update host(zfft)
-DO JM=1,D_NUMP
-  IM = D_MYMS(JM)
-  IF (IM==0 .OR. IM==1) THEN
-    write (6,*) 'PU(250:260) at IM = ',IM
-    write (6,'(999F10.5)') ZFFT(250:260,JM,1)
-  ENDIF
-ENDDO
-call flush(6)
-#endif
 
 !*     2.    PERIODICIZATION IN Y DIRECTION
 !            ------------------------------

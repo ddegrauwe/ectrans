@@ -78,8 +78,6 @@ REAL (KIND=JPRB)   :: ZSCAL
 REAL (KIND=JPRB), POINTER :: ZFFT_L(:)  ! 1D copy
 INTEGER(KIND=JPIM) :: OFFSETS(2)   ! daand: why isn't OFFSETS(1) not enough?
 INTEGER(KIND=JPIM) :: LOENS(1)
-integer :: istat
-character(len=32) :: cfrmt
 
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
@@ -95,7 +93,6 @@ LOENS(1)=IRLEN
 JLOT=UBOUND(PFFT,2)*UBOUND (PFFT,3)
 
 ! compute offsets; TODO: avoid recomputing/putting on device every time.
-!OFFSETS(1)=0
 DO JJ=1,SIZE(OFFSETS)
   OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
 ENDDO
@@ -107,40 +104,11 @@ IF (JLOT==0) THEN
   RETURN
 ENDIF
 
-!write (6,*) __FILE__, __LINE__; call flush(6)
-
-
-
 !$ACC DATA PRESENT(PFFT) COPYIN(LOENS,OFFSETS)
-
-#ifdef gnarls
-write (6,*) __FILE__, __LINE__; call flush(6)
-!$acc update host(pfft)
-write (6,*) 'performing FFT with batch size ',JLOT,' on data with shape ',shape(PFFT)
-write (6,*) 'input:'
-write (cfrmt,*) '(4X,',UBOUND(PFFT,1),'F10.5)'
-write (*,cfrmt) PFFT
-call flush(6)
-#endif
-
-#ifndef gnarls
 CALL EXECUTE_INV_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &
     & LOENS, &
     & OFFSETS,ALLOCATOR%PTR)
-#endif
-
-#ifdef gnarls
-write (6,*) __FILE__, __LINE__; call flush(6)
-!$acc update host(pfft)
-write (6,*) 'output:'
-write (cfrmt,*) '(4X,',UBOUND(PFFT,1),'F10.5)'
-write (*,cfrmt) PFFT
-call flush(6)
-#endif
-
 !$ACC END DATA
-
-!write (6,*) __FILE__, __LINE__; call flush(6)
 
 IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',1,ZHOOK_HANDLE)
 

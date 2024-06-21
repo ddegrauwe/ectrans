@@ -64,7 +64,6 @@ INTEGER(KIND=JPIM) :: IISTAN
 INTEGER(KIND=JPIM) :: JM
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
-character(len=64) :: frmt
 !     ------------------------------------------------------------------
 
 !*       1.    RECOMBINATION  OF SYMMETRIC AND ANTSYMMETRIC PARTS.
@@ -72,30 +71,6 @@ character(len=64) :: frmt
 
 
 IF (LHOOK) CALL DR_HOOK('EASRE1B_MOD:EASRE1B',0,ZHOOK_HANDLE)
-
-#ifdef gnarls
-write (6,*) __FILE__, __LINE__
-write (6,*) 'D_NPROCL = ',D_NPROCL
-write (6,*) 'shape(D_NPNTGTB1) = ',shape(D_NPNTGTB1)
-write (6,*) 'D_NPNTGTB1 = ',D_NPNTGTB1
-!$acc update host(PFFT)
-DO JM = 1, D_NUMP  !100
-  DO JGL=1,R_NDGL  !400
-    DO JFLD  =1,2*KFIELD !500
-      IPROC=D_NPROCL(JGL)
-      IISTAN=(D_NPNTGTB1(JM,JGL))*2*KFIELD
-      FOUBUF_IN(IISTAN+JFLD)=PFFT(JGL,JM,JFLD)
-      write (6,'(A,I,A,I,I,I,A,F10.5)') 'FOUBUF_IN(',IISTAN+JFLD,') <- PFFT(',JGL,JM,JFLD,') = ', PFFT(JGL,JM,JFLD)
-    ENDDO
-  ENDDO
-ENDDO
-
-write (6,*) 'FOUBUF_IN = '
-write (frmt,*) '(',2*KFIELD,'F10.5)'
-write (6,frmt) FOUBUF_IN
-call flush(6)
-
-#endif
 
 !$acc parallel loop collapse(3) private (JM, JGL, JFLD, IPROC, IISTAN) &
 !$acc& present (PFFT, D_NSTAGT0B, D_NPNTGTB1, D_NPROCL, D_NUMP, R_NDGL, FOUBUF_IN) &
@@ -110,9 +85,6 @@ DO JM = 1, D_NUMP  !100
   ENDDO
 ENDDO
 !$acc end parallel loop
-
-
-
 
 IF (LHOOK) CALL DR_HOOK('EASRE1B_MOD:EASRE1B',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------

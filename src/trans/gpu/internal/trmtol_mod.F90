@@ -110,8 +110,6 @@ CONTAINS
     TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
     TYPE(TRMTOL_HANDLE), INTENT(IN) :: HTRMTOL
 
-!#undef USE_CUDA_AWARE_MPI_FT
-
 #ifdef PARKINDTRANS_SINGLE
 #define TRMTOL_DTYPE MPI_REAL
 #else
@@ -130,21 +128,6 @@ CONTAINS
         ILENR(J) = D%NLTSGTB(J)*2*KF_LEG
         IOFFR(J) = D%NSTAGT0B(J)*2*KF_LEG
       ENDDO
-
-#ifdef gnarls
-      write(6,*) __FILE__, __LINE__
-      write (6,*) 'size(pfbuf_in) : ',size(pfbuf_in)
-      write (6,*) 'start: ',ioffs
-      write (6,*) 'end:   ',ioffs+ilens
-      write (6,*) 'size(pfbuf) : ',size(pfbuf)
-      write (6,*) 'start: ',ioffr
-      write (6,*) 'end:   ',ioffr+ilenr
-      call flush(6)
-      !$acc update host(pfbuf_in)
-      do j=1,nprtrw
-        write (6,'(A,I,A,999F10.5)') 'sending to proc ',j,' : ',pfbuf_in(IOFFS(j)+1:ioffs(j)+ilens(j))
-      enddo
-#endif
 
       CALL GSTATS(807,0)
 
@@ -215,14 +198,6 @@ CONTAINS
 #endif
       CALL GSTATS(807,1)
       
-#ifdef gnarls
-      write(6,*) __FILE__, __LINE__
-      !$acc update host(pfbuf)
-      do j=1,nprtrw
-        write (6,'(A,I,A,999F10.5)') 'received from proc ',j,' : ',pfbuf(IOFFr(j)+1:ioffr(j)+ilenr(j))
-      enddo
-#endif
-    
     ELSE
       ILEN = D%NLTSGTB(MYSETW)*2*KF_LEG
       ISTA = D%NSTAGT0B(MYSETW)*2*KF_LEG+1
@@ -238,7 +213,6 @@ CONTAINS
       CALL GSTATS(1608,1)
     ENDIF
 
-!!$acc end data
     IF (LHOOK) CALL DR_HOOK('TRMTOL_CUDAAWARE',1,ZHOOK_HANDLE)
 
     !     ------------------------------------------------------------------
