@@ -86,7 +86,7 @@ CONTAINS
     REAL(KIND=JPRBT)    :: SCAL
 
     CALL ASSIGN_PTR(FOUBUF_IN, GET_ALLOCATION(ALLOCATOR, HTRLTOM_PACK%HFOUBUF_IN),&
-        & 1_C_SIZE_T, int(D%NLENGT0B*KF_FS*2*SIZEOF(FOUBUF_IN(1)),kind=c_size_t))
+        & 1_C_SIZE_T, int(D%NLENGT0B*KF_FS*2*SIZEOF(FOUBUF_IN(1)),kind=c_size_t), SET_VALUE=.TRUE.)
 
 #ifdef OMPGPU
 #endif
@@ -112,11 +112,7 @@ CONTAINS
           IF (JM <= G_NMEN(IGLG)) THEN
             IOFF_LAT = KF_FS*D_NSTAGTF(KGL)+(JF-1)*(D_NSTAGTF(KGL+1)-D_NSTAGTF(KGL))
 
-#ifndef gnarls
-            SCAL = 1._JPRBT
-#else
             SCAL = 1._JPRBT/REAL(G_NLOEN(IGLG),JPRBT)
-#endif
             ISTA  = D_NPNTGTB0(JM,KGL)*KF_FS*2
 
             FOUBUF_IN(ISTA+2*JF-1) = SCAL * PREEL_COMPLEX(IOFF_LAT+2*JM+1)
@@ -153,11 +149,7 @@ write (6,*) 'OFFSET_VAR = ',OFFSET_VAR
           IF (JM <= G_NMEN(IGLG)) THEN
             IOFF_LAT = KF_FS*D_NSTAGTF(KGL)+(JF-1)*(D_NSTAGTF(KGL+1)-D_NSTAGTF(KGL))
 
-#ifndef gnarls
-            SCAL = 1._JPRBT
-#else
             SCAL = 1._JPRBT/REAL(G_NLOEN(IGLG),JPRBT)
-#endif
             ISTA  = D_NPNTGTB0(JM,KGL)*KF_FS*2
 
             FOUBUF_IN(ISTA+2*JF-1) = SCAL * PREEL_COMPLEX(IOFF_LAT+2*JM+1)

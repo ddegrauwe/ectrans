@@ -75,7 +75,7 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE TPM_GEN         ,ONLY : NPROMATR
 USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, GROWING_ALLOCATION
 !USE TPM_TRANS
-!USE TPM_DISTR
+USE TPM_DISTR, only : D, MYSETW
 
 
 USE ELTDIR_MOD
@@ -133,7 +133,8 @@ TYPE(ELTDIR_HANDLE) :: HELTDIR
 TYPE(TRLTOM_HANDLE) :: HTRLTOM
 TYPE(TRLTOM_PACK_HANDLE) :: HTRLTOM_PACK
 TYPE(TRGTOL_HANDLE) :: HTRGTOL
-
+REAL(KIND=JPRB), POINTER :: PREEL3D(:,:,:)
+character(len=32) :: frmt
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
@@ -167,13 +168,42 @@ CALL TRGTOL(ALLOCATOR,HTRGTOL,PREEL,KF_FS,KF_GP,KF_UV_G,KF_SCALARS_G,&
  & KVSETSC3A=KVSETSC3A,KVSETSC3B=KVSETSC3B,KVSETSC2=KVSETSC2,&
  & PGP=PGP,PGPUV=PGPUV,PGP3A=PGP3A,PGP3B=PGP3B,PGP2=PGP2)
 
+
+CALL C_F_POINTER(C_LOC(PREEL), PREEL3D, (/ SIZE(PREEL)/(KF_FS*D%NDGL_FS),KF_FS,D%NDGL_FS /))
+
 IF (KF_FS > 0) THEN
+
+  
+#ifdef gnarls
+  write (6,*) __FILE__, __LINE__
+  !$acc update host(preel)
+  write (6,*) 'NDGL_FS = ',D%NDGL_FS
+  write (6,*) 'KF_FS = ',KF_FS
+  write (6,*) 'KF_UV = ',KF_UV
+  write (6,*) 'KF_SCALARS = ',KF_SCALARS
+  write (6,*) 'D%NPTRLS= ',D%NPTRLS
+  write (6,*) 'MYSETW = ',MYSETW
+  write (6,*) 'D%NFRSTLAT = ',D%NFRSTLAT
+  write (6,*) 'PREEL before transform = '
+  write (frmt,*) '(',SIZE(PREEL3D,1),'F12.5)'
+  !write (frmt,*) '(',16,'F14.5)'
+  write (6,frmt) PREEL3D(:,1,1:4)
+#endif  
 
   ! fourier transform from PREEL_REAL to PREEL_COMPLEX (in-place!)
   CALL GSTATS(1640,0)
 ! write (6,*) __FILE__, __LINE__; call flush(6)
   CALL EFTDIR(ALLOCATOR,PREEL,KF_FS,AUX_PROC=AUX_PROC)
   CALL GSTATS(1640,1)
+  
+#ifdef gnarls
+  write (6,*) __FILE__, __LINE__
+  !$acc update host(preel)
+  write (6,*) 'PREEL after transform = '
+  write (frmt,*) '(',SIZE(PREEL3D,1),'F12.5)'
+  !write (frmt,*) '(',16,'F14.5)'
+  write (6,frmt) PREEL3D(:,1,1:4)
+#endif  
 
   CALL GSTATS(153,0)
 

@@ -494,7 +494,7 @@ allocate(zgp2(nproma,ndimgmvs,ngpblks))
 
 zgp2=0.
 zgp3a=0.
-zgpuv=0.
+zgpuv=-999.
 
 !===================================================================================================
 ! Allocate norm arrays
@@ -620,7 +620,6 @@ do jstep = 1, iters
        & pgp3a=zgp3a,                       &
      & pmeanu=zmeanu,                     &
      & pmeanv=zmeanv)
-! write (6,*) __FILE__, __LINE__; call flush(6)
 
   else
 
@@ -650,10 +649,10 @@ do jstep = 1, iters
     ! dump a field to a binary file
     call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgp2(:,1,:),         'S', noutdump)
     if (lvordiv) then
-        call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgpuv(:,nflevg,1,:), 'U', noutdump)
-        call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgpuv(:,nflevg,2,:), 'V', noutdump)
+        call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgpuv(:,1,1,:), 'U', noutdump)
+        call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgpuv(:,1,2,:), 'V', noutdump)
     endif
-    call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgp3a(:,nflevg,1,:), 'T', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgp3a(:,1,1,:), 'T', noutdump)
   endif
 ! write (6,*) __FILE__, __LINE__; call flush(6)
   
@@ -1272,9 +1271,9 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   integer :: n_num = 0 ! Meridional wavenumber
   
   ! Type of initialization: (single) 'harmonic', (random) 'spectrum', 'zero' or 'index'
-  !character(len=32) :: init_type='spectrum'
+  character(len=32) :: init_type='spectrum'
   !character(len=32) :: init_type='index'
-  character(len=32) :: init_type='harmonic'
+  !character(len=32) :: init_type='harmonic'
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0

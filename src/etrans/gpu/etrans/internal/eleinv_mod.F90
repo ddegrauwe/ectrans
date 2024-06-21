@@ -116,14 +116,14 @@ ENDIF
 #ifdef gnarls
 write (6,*) __FILE__, __LINE__; call flush(6)
 !$acc update host(pfft)
-write (*,*) 'performing FFT with batch size ',JLOT,' on data with shape ',shape(PFFT)
-write (*,*) 'input:'
+write (6,*) 'performing FFT with batch size ',JLOT,' on data with shape ',shape(PFFT)
+write (6,*) 'input:'
 write (cfrmt,*) '(4X,',UBOUND(PFFT,1),'F10.5)'
 write (*,cfrmt) PFFT
 call flush(6)
 #endif
 
-#ifdef gnarls
+#ifndef gnarls
 CALL EXECUTE_INV_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &
     & LOENS, &
     & OFFSETS,ALLOCATOR%PTR)
@@ -132,7 +132,7 @@ CALL EXECUTE_INV_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &
 #ifdef gnarls
 write (6,*) __FILE__, __LINE__; call flush(6)
 !$acc update host(pfft)
-write (*,*) 'output:'
+write (6,*) 'output:'
 write (cfrmt,*) '(4X,',UBOUND(PFFT,1),'F10.5)'
 write (*,cfrmt) PFFT
 call flush(6)

@@ -88,15 +88,15 @@ ENDIF
 #ifdef gnarls
 write (6,*) __FILE__, __LINE__; call flush(6)
 !$acc update host(preel)
-write (*,*) 'performing FFT with batch size ',JLOT,' on data with shape ',IRLEN+2,SIZE(PREEL)/REAL(IRLEN+2)
-write (*,*) 'input:'
+write (6,*) 'performing FFT with batch size ',JLOT,' on data with shape ',IRLEN+2,SIZE(PREEL)/REAL(IRLEN+2)
+write (6,*) 'input:'
 write (cfrmt,*) '(4X,',IRLEN+2,'F10.5)'
 write (*,cfrmt) PREEL
 call flush(6)
 #endif
 
 ! write (6,*) __FILE__, __LINE__; call flush(6)
-#ifdef gnarls
+#ifndef gnarls
 CALL EXECUTE_DIR_FFT(PREEL(:),PREEL(:),JLOT, &
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
@@ -105,7 +105,7 @@ CALL EXECUTE_DIR_FFT(PREEL(:),PREEL(:),JLOT, &
 
 #ifdef gnarls
 !$acc update host(preel)
-write (*,*) 'output:'
+write (6,*) 'output:'
 write (cfrmt,*) '(4X,',IRLEN+2,'F10.5)'
 write (*,cfrmt) PREEL
 call flush(6)

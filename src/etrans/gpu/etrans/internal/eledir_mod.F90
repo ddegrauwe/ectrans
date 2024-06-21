@@ -52,7 +52,7 @@ SUBROUTINE ELEDIR(ALLOCATOR,PFFT)
 USE PARKIND1  ,ONLY : JPIM, JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
-USE TPM_DISTR       ,ONLY : D, D_NUMP
+USE TPM_DISTR       ,ONLY : D, D_NUMP, D_MYMS
 USE TPM_DIM         ,ONLY : R
 USE TPMALD_DIM      ,ONLY : RALD
 USE TPMALD_FFT      ,ONLY : TALD
@@ -79,7 +79,8 @@ REAL (KIND=JPRB), POINTER :: ZFFT_L(:)  ! 1D copy
 INTEGER(KIND=JPIM) :: OFFSETS(2)   ! daand: why isn't OFFSETS(1) not enough?
 INTEGER(KIND=JPIM) :: LOENS(1)
 integer :: istat
-character(len=32) :: cfrmt
+integer(kind=jpim) :: im, jm
+character(len=32) :: frmt
 
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
@@ -112,17 +113,17 @@ ENDIF
 
 !$ACC DATA PRESENT(PFFT) COPYIN(LOENS,OFFSETS)
 
-#ifndef gnarls
+#ifdef gnarls
 !$acc update host(pfft)
 write (6,*) __FILE__, __LINE__; call flush(6)
-write (*,*) 'performing FFT with batch size ',JLOT,' on data with shape ',shape(PFFT)
-write (*,*) 'input:'
-write (cfrmt,*) '(4X,',UBOUND(PFFT,1),'F10.5)'
-write (*,cfrmt) PFFT
+write (6,*) 'performing FFT with batch size ',JLOT,' on data with shape ',shape(PFFT)
+write (6,*) 'input:'
+write (frmt,*) '(4X,',UBOUND(PFFT,1),'F10.5)'
+write (*,frmt) PFFT
 call flush(6)
 #endif
 
-#ifdef gnarls
+#ifndef gnarls
 CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &    ! -JLOT to have hicfft make distinction between zonal and meridional direction. Don't worry, abs(JLOT) is used internally ...
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
@@ -131,9 +132,9 @@ CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &    ! -JLOT to have hicfft make
 #ifdef gnarls
 !$acc update host(pfft)
 write (6,*) __FILE__, __LINE__; call flush(6)
-write (*,*) 'output:'
-write (cfrmt,*) '(4X,',UBOUND(PFFT,1),'F10.5)'
-write (*,cfrmt) PFFT
+write (6,*) 'output:'
+write (frmt,*) '(4X,',UBOUND(PFFT,1),'F10.5)'
+write (*,frmt) PFFT
 call flush(6)
 #endif
 

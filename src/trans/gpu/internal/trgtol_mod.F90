@@ -541,6 +541,7 @@ CONTAINS
 #ifdef ACCGPU
     !$ACC WAIT(1)
 #endif
+
     CALL GSTATS(1602,1)
 
     IF (LSYNC_TRANS) THEN
@@ -579,6 +580,8 @@ CONTAINS
       CALL MPI_IRECV(ZCOMBUFR(ICOMBUFR_OFFSET(INR)+1:ICOMBUFR_OFFSET(INR+1)),IRECVTOT(IPROC), &
         & TRGTOL_DTYPE,NPRCIDS(IPROC)-1,MTAGLG,MPL_COMM_OML(OML_MY_THREAD()),IREQ(IR),IERROR)
     ENDDO
+
+
 
     !....Send loop.........................................................
     DO INS=1,ISEND_COUNTS
@@ -724,6 +727,7 @@ CONTAINS
 #ifdef ACCGPU
     !$ACC WAIT(1)
 #endif
+
     CALL GSTATS(1603,1)
 
 #ifdef OMPGPU

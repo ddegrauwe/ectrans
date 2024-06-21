@@ -238,15 +238,15 @@ CALL GSTATS(152,1)
 ENDIF
 
 !!$acc update host(preel)
-!write (*,*) 'PREEL = ',PREEL
+!write (6,*) 'PREEL = ',PREEL
 
 IF(KF_UV > 0 .OR. KF_SCDERS > 0) THEN
   CALL EFSC(PREEL, KF_UV, KF_SCALARS, KF_SCDERS,KF_FS)
 ENDIF
 
 !!$acc update host(preel)
-!write (*,*) 'after EFSC:'
-!write (*,*) 'PREEL = ',PREEL
+!write (6,*) 'after EFSC:'
+!write (6,*) 'PREEL = ',PREEL
 
 IF ( KF_FS > 0 ) THEN
   CALL EFTINV(ALLOCATOR,PREEL,KF_FS)

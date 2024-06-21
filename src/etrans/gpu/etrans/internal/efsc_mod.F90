@@ -249,18 +249,18 @@ call abort()
 !$acc update host(preel)
 IF(LUVDER)THEN
 
-write (*,*) 'shape(PREEL) = ',shape(PREEL)
-write (*,*) 'G_NMEN = ',G_NMEN
-write (*,*) 'D_NSTAGTF = ',D_NSTAGTF
-write (*,*) 'D_NPTRLS(MYSETW) = ',D_NPTRLS(MYSETW)
-write (*,*) 'D%NDGL_FS = ',D%NDGL_FS
+write (6,*) 'shape(PREEL) = ',shape(PREEL)
+write (6,*) 'G_NMEN = ',G_NMEN
+write (6,*) 'D_NSTAGTF = ',D_NSTAGTF
+write (6,*) 'D_NPTRLS(MYSETW) = ',D_NPTRLS(MYSETW)
+write (6,*) 'D%NDGL_FS = ',D%NDGL_FS
 
-write (*,*) 'beginning of efsc: PREEL = '
+write (6,*) 'beginning of efsc: PREEL = '
 write (frmt,*) '(',D%NLENGTF,'E14.4)'
 write (*,frmt) PREEL
 
-write (*,*) 'I_UV_OFFSET = ',I_UV_OFFSET
-write (*,*) 'I_UVDERS_OFFSET = ',I_UVDERS_OFFSET
+write (6,*) 'I_UV_OFFSET = ',I_UV_OFFSET
+write (6,*) 'I_UVDERS_OFFSET = ',I_UVDERS_OFFSET
 
   DO JF=1,2*KF_UV
     DO JGL = 1, D%NDGL_FS
@@ -273,9 +273,9 @@ write (*,*) 'I_UVDERS_OFFSET = ',I_UVDERS_OFFSET
         II = IR+1
         !PUVDERS(IR,JF) = -PUV(II,JF)*ZIM
         !PUVDERS(II,JF) =  PUV(IR,JF)*ZIM
-        write (*,*) 'JF = ',JF,'; JGL = ',JGL,'; JM = ',JM
-        write (*,*) '  PREEL(',D%NLENGTF*(I_UVDERS_OFFSET+JF-1)+IR,') <- -PREEL(',D%NLENGTF*(I_UV_OFFSET+JF-1)+II,') = ',PREEL(D%NLENGTF*(I_UV_OFFSET+JF-1)+II)
-        write (*,*) '  PREEL(',D%NLENGTF*(I_UVDERS_OFFSET+JF-1)+II,') <-  PREEL(',D%NLENGTF*(I_UV_OFFSET+JF-1)+IR,') = ',PREEL(D%NLENGTF*(I_UV_OFFSET+JF-1)+IR)
+        write (6,*) 'JF = ',JF,'; JGL = ',JGL,'; JM = ',JM
+        write (6,*) '  PREEL(',D%NLENGTF*(I_UVDERS_OFFSET+JF-1)+IR,') <- -PREEL(',D%NLENGTF*(I_UV_OFFSET+JF-1)+II,') = ',PREEL(D%NLENGTF*(I_UV_OFFSET+JF-1)+II)
+        write (6,*) '  PREEL(',D%NLENGTF*(I_UVDERS_OFFSET+JF-1)+II,') <-  PREEL(',D%NLENGTF*(I_UV_OFFSET+JF-1)+IR,') = ',PREEL(D%NLENGTF*(I_UV_OFFSET+JF-1)+IR)
       ENDDO
     ENDDO
   ENDDO
@@ -285,8 +285,8 @@ call abort()
 
 !*       2.2     SCALAR VARIABLES
   
-write (*,*) 'I_SC_OFFSET = ',I_SC_OFFSET
-write (*,*) 'I_SCDERS_OFFSET = ',I_SCDERS_OFFSET
+write (6,*) 'I_SC_OFFSET = ',I_SC_OFFSET
+write (6,*) 'I_SCDERS_OFFSET = ',I_SCDERS_OFFSET
 
 IF(KF_SCDERS > 0)THEN
   DO JF=1,KF_SCALARS
@@ -300,14 +300,14 @@ IF(KF_SCDERS > 0)THEN
         II = IR+1
         !PEWDERS(IR,JF) = -PSCALAR(II,JF)*ZIM
         !PEWDERS(II,JF) =  PSCALAR(IR,JF)*ZIM
-        write (*,*) 'PREEL(',D%NLENGTF*(I_SCDERS_OFFSET+JF-1)+IR,') <- -PREEL(',D%NLENGTF*(I_SC_OFFSET+JF-1)+II,') = ',PREEL(D%NLENGTF*(I_SC_OFFSET+JF-1)+II)
-        write (*,*) 'PREEL(',D%NLENGTF*(I_SCDERS_OFFSET+JF-1)+II,') <-  PREEL(',D%NLENGTF*(I_SC_OFFSET+JF-1)+IR,') = ',PREEL(D%NLENGTF*(I_SC_OFFSET+JF-1)+IR)
+        write (6,*) 'PREEL(',D%NLENGTF*(I_SCDERS_OFFSET+JF-1)+IR,') <- -PREEL(',D%NLENGTF*(I_SC_OFFSET+JF-1)+II,') = ',PREEL(D%NLENGTF*(I_SC_OFFSET+JF-1)+II)
+        write (6,*) 'PREEL(',D%NLENGTF*(I_SCDERS_OFFSET+JF-1)+II,') <-  PREEL(',D%NLENGTF*(I_SC_OFFSET+JF-1)+IR,') = ',PREEL(D%NLENGTF*(I_SC_OFFSET+JF-1)+IR)
       ENDDO
     ENDDO
   ENDDO
 ENDIF
 
-write (*,*) 'efsc on cpu: PREEL = '
+write (6,*) 'efsc on cpu: PREEL = '
 write (*,'(6E14.4)') PREEL
 
 #endif
@@ -371,7 +371,7 @@ ENDIF
 
 
 !$acc update host(preel)
-write (*,*) 'efsc from gpu: PREEL = '
+write (6,*) 'efsc from gpu: PREEL = '
 write (*,'(6E14.4)') PREEL
 call flush(6)
 

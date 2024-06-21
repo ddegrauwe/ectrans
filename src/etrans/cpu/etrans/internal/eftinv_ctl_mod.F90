@@ -167,9 +167,7 @@ DO JGL=1,D%NDGL_FS
 
 !   3.  Fourier transform
   IF(KF_FS > 0) THEN
-#ifdef gnarls
     CALL FTINV(ZGTF,KF_FS,IGL)
-#endif
   ENDIF
 ENDDO
 !$OMP END PARALLEL DO

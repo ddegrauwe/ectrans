@@ -196,9 +196,7 @@ CALL GSTATS(1640,0)
 DO JGL=1,D%NDGL_FS
   IGL = JGL
   IF(KF_FS>0) THEN
-#ifdef gnarls
     CALL FTDIR(ZGTF,KF_FS,IGL)
-#endif
   ENDIF
 
 ! Save Fourier data in FOUBUF_IN
