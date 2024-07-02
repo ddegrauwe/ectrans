@@ -133,7 +133,7 @@ ENDDO
 
 IF (PRESENT(KFLDPTR)) THEN
 !$acc parallel loop collapse (2) private (J, JM, IM, IR, IFLD) &
-!$acc & present (D_NUMP, D_MYMS, PU, PV) copyin (PSPMEANU, PSPMEANV, KFLDPTR)
+!$acc & present (D_NUMP, D_MYMS, PU, PV, PSPMEANU, PSPMEANV) copyin (KFLDPTR)
   DO J = 1, KFIELD
     DO JM = 1, D_NUMP
       IM = D_MYMS (JM)
@@ -148,7 +148,7 @@ IF (PRESENT(KFLDPTR)) THEN
 !$acc end parallel loop
 ELSE
 !$acc parallel loop collapse (2) private (J, JM, IM, IR) &
-!$acc & present (D_NUMP, D_MYMS, PU, PV) copyin (PSPMEANU, PSPMEANV)
+!$acc & present (D_NUMP, D_MYMS, PU, PV, PSPMEANU, PSPMEANV)
   DO J = 1, KFIELD
     DO JM = 1, D_NUMP
       IM = D_MYMS (JM)

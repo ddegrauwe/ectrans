@@ -92,6 +92,8 @@ CONTAINS
 #endif
 #ifdef ACCGPU
     !$ACC DATA PRESENT(G_NMEN,D_NPNTGTB0,FOUBUF_IN,PREEL_COMPLEX,D_NSTAGTF,D_NDGL_FS,G_NLOEN, R_NSMAX,G_NMEN_MAX) ASYNC(1)
+! daand: safety here
+!$ACC WAIT(1)
 #endif
 
     ! scale results and move into next transformation buffer
@@ -121,6 +123,8 @@ CONTAINS
         ENDDO
       ENDDO
     ENDDO
+! daand: safety here
+!$ACC WAIT(1)
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
@@ -258,6 +262,8 @@ CONTAINS
         ENDDO
       ENDDO
     END DO
+! daand: safety here
+!$ACC WAIT(1)
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU

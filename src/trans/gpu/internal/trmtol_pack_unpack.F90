@@ -163,6 +163,8 @@ CONTAINS
         ENDDO
       ENDDO
     ENDDO
+! daand: safety here
+!$ACC WAIT(1)
 
 #ifdef OMPGPU
 #endif

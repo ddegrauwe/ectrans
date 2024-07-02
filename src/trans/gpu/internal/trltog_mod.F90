@@ -479,7 +479,12 @@ CONTAINS
 #endif
 #ifdef ACCGPU
     !$ACC DATA COPYIN(IIN_TO_SEND_BUFR,IGP_OFFSETS) ASYNC(1)
+! daand: safety here
+!$ACC WAIT(1)
 #endif
+
+#ifdef gnarls
+! daand: replacing this by something simpler
 
     ACC_POINTERS_CNT = 0
     IF (PRESENT(PGP)) THEN
@@ -515,6 +520,21 @@ CONTAINS
     ! Present until self contribution and packing are done
     !$ACC DATA PRESENT(PREEL_REAL)
 #endif
+
+#else
+
+    !$ACC DATA IF(PRESENT(PGP))   COPYOUT(PGP)
+    !$ACC DATA IF(PRESENT(PGPUV)) COPYOUT(PGPUV)
+    !$ACC DATA IF(PRESENT(PGP2))  COPYOUT(PGP2)
+    !$ACC DATA IF(PRESENT(PGP3A)) COPYOUT(PGP3A)
+    !$ACC DATA IF(PRESENT(PGP3B)) COPYOUT(PGP3B)
+
+    ! Present until self contribution and packing are done
+    !$ACC DATA PRESENT(PREEL_REAL)
+
+
+#endif
+
 #ifdef OMPGPU
 #endif
 
@@ -541,6 +561,8 @@ CONTAINS
 #endif
 #ifdef ACCGPU
       !$ACC DATA COPYIN(IFLDA(1:IFLDS)) ASYNC(1)
+! daand: safety here
+!$ACC WAIT(1)
 #endif
 
       CALL GSTATS(1604,0)
@@ -600,6 +622,8 @@ CONTAINS
 #ifdef ACCGPU
       !$ACC END DATA
 #endif
+! daand: safety here
+!$ACC WAIT(1)
 
     ENDIF
 
@@ -671,6 +695,8 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
+! daand: safety here
+!$ACC WAIT(1)
     !$ACC END DATA ! ZCOMBUFS
 
     !$ACC END DATA ! PREEL_REAL
@@ -773,6 +799,8 @@ CONTAINS
 #endif
 #ifdef ACCGPU
       !$ACC DATA COPYIN(IFLDA(1:IRECV_FIELD_COUNT_V)) ASYNC(1)
+! daand: safety here
+!$ACC WAIT(1)
 #endif
 
       IRECV_WSET_OFFSET_V = IRECV_WSET_OFFSET(ISETW)
@@ -794,6 +822,8 @@ CONTAINS
             PGP(JK,IFLD,JBLK) = ZCOMBUFR(JI)
           ENDDO
         ENDDO
+! daand: safety here
+!$ACC WAIT(1)
       ELSE
 #ifdef OMPGPU
 #endif
@@ -819,6 +849,8 @@ CONTAINS
             ENDIF
           ENDDO
         ENDDO
+! daand: safety here
+!$ACC WAIT(1)
       ENDIF
 #ifdef OMPGPU
 #endif
@@ -841,20 +873,12 @@ CONTAINS
       CALL GSTATS(440,1)
     ENDIF
     CALL GSTATS(422,0)
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-    !$ACC END DATA ! PGP3B
-    !$ACC END DATA ! PGP3A
-    !$ACC END DATA ! PGP2
-    !$ACC END DATA ! PGPUV
-    !$ACC END DATA ! PGP
-#endif
+
     IF (PRESENT(PGP)) THEN
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-      !$ACC UPDATE HOST(PGP)
+      !$ACC UPDATE HOST(PGP) ASYNC(1)
 #endif
     ENDIF
     IF (PRESENT(PGPUV)) THEN
@@ -885,7 +909,24 @@ CONTAINS
       !$ACC UPDATE HOST(PGP3B) ASYNC(1)
 #endif
     ENDIF
+
+
+!$ACC WAIT(1)
+
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+    !$ACC END DATA ! PGP3B
+    !$ACC END DATA ! PGP3A
+    !$ACC END DATA ! PGP2
+    !$ACC END DATA ! PGPUV
+    !$ACC END DATA ! PGP
+#endif
+
+#ifdef gnarls
     IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_DELETE(ACC_POINTERS(1:ACC_POINTERS_CNT),STREAM=1_ACC_HANDLE_KIND)
+#endif
+
     IF (LSYNC_TRANS) THEN
 #ifdef ACCGPU
       !$ACC WAIT(1)

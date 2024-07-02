@@ -104,11 +104,27 @@ IF (JLOT==0) THEN
   RETURN
 ENDIF
 
+
+#ifdef gnarls
+
+! fake fft: only take mean value, on cpu
+!$acc data present(zfft_l)
+!$acc update host(zfft_l)
+DO JJ=1,JLOT
+  zfft_l((JJ-1)*(irlen+2)+2:jj*(irlen+2)-2)=zfft_l((JJ-1)*(irlen+2)+1)
+ENDDO
+!$acc update device(zfft_l)
+!$acc end data
+
+#else
+
 !$ACC DATA PRESENT(PFFT) COPYIN(LOENS,OFFSETS)
 CALL EXECUTE_INV_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &
     & LOENS, &
     & OFFSETS,ALLOCATOR%PTR)
 !$ACC END DATA
+
+#endif
 
 IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',1,ZHOOK_HANDLE)
 

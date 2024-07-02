@@ -158,6 +158,10 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 IF (LHOOK) CALL DR_HOOK('EINV_TRANS_CTL_MOD:EINV_TRANS_CTL',0,ZHOOK_HANDLE)
 
+!write (6,*) __FILE__, __LINE__; call flush(6)
+!write (6,*) 'entered einv_trans_ctl'
+!call flush(6)
+
 IF(NPROMATR > 0) THEN
   print *, "This is currently not supported and/or tested (NPROMATR > 0)"
   stop 24
@@ -176,15 +180,20 @@ CALL INSTANTIATE_ALLOCATOR(ALLOCATOR, GROWING_ALLOCATION)
 
 IF(KF_OUT_LT > 0) THEN
   CALL GSTATS(1647,0)
+!write (6,*) __FILE__, __LINE__; call flush(6)
   CALL ELTINV(ALLOCATOR, HELTINV, KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,ILEI2,IDIM1,FOUBUF_IN,&
      & PSPVOR,PSPDIV,PSPSCALAR ,&
      & PSPSC3A,PSPSC3B,PSPSC2 , &
      & FSPGL_PROC=FSPGL_PROC,PSPMEANU=PSPMEANU,PSPMEANV=PSPMEANV)
+!write (6,*) __FILE__, __LINE__; call flush(6)
   CALL GSTATS(1647,1)
 
   CALL GSTATS(152,0)
+!write (6,*) __FILE__, __LINE__; call flush(6)
   CALL TRMTOL_CUDAAWARE(ALLOCATOR,HTRMTOL,FOUBUF_IN,FOUBUF,KF_OUT_LT)
+!write (6,*) __FILE__, __LINE__; call flush(6)
   CALL TRMTOL_UNPACK(ALLOCATOR,HTRMTOL_UNPACK,FOUBUF,PREEL,KF_OUT_LT,KF_FS)   ! Formerly known as fourier_in routine
+!write (6,*) __FILE__, __LINE__; call flush(6)
   CALL GSTATS(152,1)
 ENDIF
 
@@ -193,14 +202,22 @@ IF(KF_UV > 0 .OR. KF_SCDERS > 0) THEN
 ENDIF
 
 IF ( KF_FS > 0 ) THEN
+!write (6,*) __FILE__, __LINE__; call flush(6)
   CALL EFTINV(ALLOCATOR,PREEL,KF_FS)
+!write (6,*) __FILE__, __LINE__; call flush(6)
 
+
+ENDIF
+
+
+!write (6,*) __FILE__, __LINE__; call flush(6)
   CALL TRLTOG_CUDAAWARE(ALLOCATOR,HTRLTOG,PREEL,KF_FS,KF_GP,KF_UV_G,KF_SCALARS_G,&
    & KVSETUV=KVSETUV,KVSETSC=KVSETSC,&
    & KVSETSC3A=KVSETSC3A,KVSETSC3B=KVSETSC3B,KVSETSC2=KVSETSC2,&
    & PGP=PGP,PGPUV=PGPUV,PGP3A=PGP3A,PGP3B=PGP3B,PGP2=PGP2)
-
-ENDIF
+!write (6,*) __FILE__, __LINE__; call flush(6)
+!write (6,*) 'leaving einv_trans_ctl'
+!write (6,*) __FILE__, __LINE__; call flush(6)
 
 IF (LHOOK) CALL DR_HOOK('EINV_TRANS_CTL_MOD:EINV_TRANS_CTL',1,ZHOOK_HANDLE)
 

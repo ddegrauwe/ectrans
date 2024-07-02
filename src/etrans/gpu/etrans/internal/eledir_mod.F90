@@ -76,7 +76,7 @@ INTEGER(KIND=JPIM) :: IRLEN, ICLEN, JLOT, JJ
 TYPE(C_PTR) :: IPLAN_C2R
 REAL (KIND=JPRB)   :: ZSCAL
 REAL (KIND=JPRB), POINTER :: ZFFT_L(:)  ! 1D copy
-INTEGER(KIND=JPIM) :: OFFSETS(2)   ! daand: why isn't OFFSETS(1) not enough?
+INTEGER(KIND=JPIM) :: OFFSETS(2)
 INTEGER(KIND=JPIM) :: LOENS(1)
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
@@ -103,11 +103,27 @@ IF (JLOT==0) THEN
   RETURN
 ENDIF
 
+#ifdef gnarls
+
+! fake fft: only take mean value, on cpu
+!$acc data present(zfft_l)
+!$acc update host(zfft_l)
+DO JJ=1,JLOT
+  zfft_l((JJ-1)*(irlen+2)+1)=sum(zfft_l((JJ-1)*(irlen+2)+1:jj*(irlen+2)-2))   ! mean value
+  zfft_l((JJ-1)*(irlen+2)+2:jj*(irlen+2))=0.
+ENDDO
+!$acc update device(zfft_l)
+!$acc end data
+
+#else
+
 !$ACC DATA PRESENT(PFFT) COPYIN(LOENS,OFFSETS)
 CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &    ! -JLOT to have hicfft make distinction between zonal and meridional direction. Don't worry, abs(JLOT) is used internally ...
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
 !$ACC END DATA
+
+#endif
 
 IF (LHOOK) CALL DR_HOOK('ELEDIR_MOD:ELEDIR',1,ZHOOK_HANDLE)
 

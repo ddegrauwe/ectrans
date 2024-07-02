@@ -152,14 +152,101 @@ OPTIONAL AUX_PROC
 INTEGER(KIND=JPIM) :: IUBOUND(4),J
 INTEGER(KIND=JPIM) :: IF_UV,IF_UV_G,IF_SCALARS,IF_SCALARS_G,IF_FS,IF_GP
 INTEGER(KIND=JPIM) :: IF_SC2_G,IF_SC3A_G,IF_SC3B_G
+integer, save :: ncalls=0
+
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
+
+ncalls=ncalls+1
+#ifdef gnarls
+write (6,*) __FILE__, __LINE__,': ncalls = ',ncalls; call flush(6)
+if ( present(PSPVOR) ) THEN
+  write (6,*) 'shape(PSPVOR) = ',SHAPE(PSPVOR)
+endif
+if ( present(PSPDIV) ) THEN
+  write (6,*) 'shape(PSPDIV) = ',SHAPE(PSPDIV)
+endif
+if ( present(PSPSCALAR) ) THEN
+  write (6,*) 'shape(PSPSCALAR) = ',SHAPE(PSPSCALAR)
+endif
+if ( present(PSPSC3A) ) THEN
+  write (6,*) 'shape(PSPSC3A) = ',SHAPE(PSPSC3A)
+endif
+if ( present(PSPSC3B) ) THEN
+  write (6,*) 'shape(PSPSC3B) = ',SHAPE(PSPSC3B)
+endif
+if ( present(PSPSC2) ) THEN
+  write (6,*) 'shape(PSPSC2) = ',SHAPE(PSPSC2)
+endif
+if ( present(PGP) ) THEN
+  write (6,*) 'shape(PGP) = ',SHAPE(PGP)
+endif
+if ( present(PGPUV) ) THEN
+  write (6,*) 'shape(PGPUV) = ',SHAPE(PGPUV)
+endif
+if ( present(PGP3A) ) THEN
+  write (6,*) 'shape(PGP3A) = ',SHAPE(PGP3A)
+endif
+if ( present(PGP3B) ) THEN
+  write (6,*) 'shape(PGP3B) = ',SHAPE(PGP3B)
+endif
+if ( present(PGP2) ) THEN
+  write (6,*) 'shape(PGP2) = ',SHAPE(PGP2)
+endif
+if ( present(PMEANU) ) THEN
+  write (6,*) 'shape(PMEANU) = ',SHAPE(PMEANU)
+endif
+if ( present(PMEANV) ) THEN
+  write (6,*) 'shape(PMEANV) = ',SHAPE(PMEANV)
+endif
+#endif
 
 ! Set current resolution
 IF (LHOOK) CALL DR_HOOK('EDIR_TRANS',0,ZHOOK_HANDLE)
 CALL GSTATS(1808,0)
 CALL ESET_RESOL(KRESOL)
+
+! check if args are contiguous
+if ( present(PSPVOR) ) THEN
+  if (.not. is_contiguous(PSPVOR) ) call abort_trans('PSPVOR not contiguous')
+endif
+if ( present(PSPDIV) ) THEN
+  if (.not. is_contiguous(PSPDIV) ) call abort_trans('PSPDIV not contiguous')
+endif
+if ( present(PSPSCALAR) ) THEN
+  if (.not. is_contiguous(PSPSCALAR) ) call abort_trans('PSPSCALAR not contiguous')
+endif
+if ( present(PSPSC3A) ) THEN
+  if (.not. is_contiguous(PSPSC3A) ) call abort_trans('PSPSC3A not contiguous')
+endif
+if ( present(PSPSC3B) ) THEN
+  if (.not. is_contiguous(PSPSC3B) ) call abort_trans('PSPSC3B not contiguous')
+endif
+if ( present(PSPSC2) ) THEN
+  if (.not. is_contiguous(PSPSC2) ) call abort_trans('PSPSC2 not contiguous')
+endif
+if ( present(PGP) ) THEN
+  if (.not. is_contiguous(PGP) ) call abort_trans('PGP not contiguous')
+endif
+if ( present(PGPUV) ) THEN
+  if (.not. is_contiguous(PGPUV) ) call abort_trans('PGPUV not contiguous')
+endif
+if ( present(PGP3A) ) THEN
+  if (.not. is_contiguous(PGP3A) ) call abort_trans('PGP3A not contiguous')
+endif
+if ( present(PGP3B) ) THEN
+  if (.not. is_contiguous(PGP3B) ) call abort_trans('PGP3B not contiguous')
+endif
+if ( present(PGP2) ) THEN
+  if (.not. is_contiguous(PGP2) ) call abort_trans('PGP2 not contiguous')
+endif
+if ( present(PMEANU) ) THEN
+  if (.not. is_contiguous(PMEANU) ) call abort_trans('PMEANU not contiguous')
+endif
+if ( present(PMEANV) ) THEN
+  if (.not. is_contiguous(PMEANV) ) call abort_trans('PMEANV not contiguous')
+endif
 
 ! Set defaults
 
@@ -493,6 +580,79 @@ CALL EDIR_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_UV,IF_SCALARS,&
  & PSPSC3A,PSPSC3B,PSPSC2,KVSETSC3A,KVSETSC3B,KVSETSC2,PGPUV,PGP3A,PGP3B,PGP2,&
  & PMEANU,PMEANV,AUX_PROC)
 IF (LHOOK) CALL DR_HOOK('EDIR_TRANS',1,ZHOOK_HANDLE)
+
+
+#ifdef gnarls
+
+write (6,*) 'INPUT:'
+
+if ( present(KVSETSC) ) THEN
+  write (6,*) 'KVSETSC = '
+  write (6,'(16I4)') KVSETSC
+endif
+
+if ( present(PGP) ) THEN
+  write (6,*) 'PGP(1:20,1,1) = '
+  write (6,'(8E12.4)') PGP(1:20,1,1)
+  !write (6,'(8E12.4)') PGP(:,1,:)
+endif
+if ( present(PGPUV) ) THEN
+  write (6,*) 'PGPUV(1:20,1,1,1) = '
+  write (6,'(8E12.4)') PGPUV(1:20,1,1,1)
+endif
+if ( present(PGP3A) ) THEN
+  write (6,*) 'PGP3A(1:20,1,1,1) = '
+  write (6,'(8E12.4)') PGP3A(1:20,1,1,1)
+endif
+if ( present(PGP3B) ) THEN
+  write (6,*) 'PGP3B(1:20,1,1,1) = '
+  write (6,'(8E12.4)') PGP3B(1:20,1,1,1)
+endif
+if ( present(PGP2) ) THEN
+  write (6,*) 'PGP2(1:20,1,1) = '
+  write (6,'(8E12.4)') PGP2(1:20,1,1)
+endif
+
+write (6,*) 'OUTPUT:'
+
+if ( present(PSPVOR) ) THEN
+  write (6,*) 'PSPVOR = '
+  write (6,'(8E12.4)') PSPVOR(1:MIN(UBOUND(PSPVOR,1),1),1:20)
+endif
+if ( present(PSPDIV) ) THEN
+  write (6,*) 'PSPDIV = '
+  write (6,'(8E12.4)') PSPDIV(1:MIN(UBOUND(PSPDIV,1),1),1:20)
+endif
+if ( present(PSPSCALAR) ) THEN
+  write (6,*) 'PSPSCALAR = '
+  write (6,'(8E12.4)') PSPSCALAR(1:MIN(UBOUND(PSPSCALAR,1),1),1:20)
+  !write (6,'(8E12.4)') PSPSCALAR(1:MIN(UBOUND(PSPSCALAR,1),1),:)
+endif
+if ( present(PSPSC3A) ) THEN
+  write (6,*) 'PSPSC3A = '
+  write (6,'(8E12.4)') PSPSC3A(1:MIN(UBOUND(PSPSC3A,1),1),1:20,1)
+endif
+if ( present(PSPSC3B) ) THEN
+  write (6,*) 'PSPSC3B = '
+  write (6,'(8E12.4)') PSPSC3B(1:MIN(UBOUND(PSPSC3B,1),1),1:20,1)
+endif
+if ( present(PSPSC2) ) THEN
+  write (6,*) 'PSPSCALAR = '
+  write (6,'(8E12.4)') PSPSC2(1:MIN(UBOUND(PSPSC2,1),1),1:20)
+endif
+if ( present(PMEANU) ) THEN
+  write (6,*) 'PMEANU = '
+  write (6,'(8E12.4)') PMEANU(1:MIN(UBOUND(PSPSCALAR,1),1))
+endif
+if ( present(PMEANV) ) THEN
+  write (6,*) 'PMEANV = '
+  write (6,'(8E12.4)') PMEANV(1:MIN(UBOUND(PMEANV,1),1))
+endif
+
+#endif
+
+
+if ( ncalls == -1 ) call abort('hold it')
 
 !     ------------------------------------------------------------------
 !endif INTERFACE

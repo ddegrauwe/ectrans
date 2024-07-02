@@ -320,7 +320,10 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-    !$ACC DATA COPYIN(IRECV_BUFR_TO_OUT,PGP_INDICES) PRESENT(PREEL_REAL) ASYNC(1)
+    !$ACC DATA COPYIN(IRECV_BUFR_TO_OUT,PGP_INDICES) ASYNC(1)
+    !$ACC DATA IF (KF_FS>0) PRESENT(PREEL_REAL) ASYNC(1)
+! daand: safety here
+!$ACC WAIT(1)
 #endif
 
     CALL GSTATS(1805,1)
@@ -336,6 +339,8 @@ CONTAINS
     ENDIF
     CALL GSTATS(412,0)
     ACC_POINTERS_CNT = 0
+
+#ifdef gnarls
     IF (PRESENT(PGP)) THEN
       ACC_POINTERS_CNT = ACC_POINTERS_CNT + 1
       ACC_POINTERS(ACC_POINTERS_CNT) = EXT_ACC_PASS(PGP)
@@ -402,6 +407,16 @@ CONTAINS
     !$ACC DATA IF(PRESENT(PGP3A)) PRESENT(PGP3A) ASYNC(1)
     !$ACC DATA IF(PRESENT(PGP3B)) PRESENT(PGP3B) ASYNC(1)
 #endif
+
+#else
+! daand: getting strange behaviour with stuff above, so taking simpler approach
+    !$ACC DATA IF(PRESENT(PGP))   COPYIN(PGP)
+    !$ACC DATA IF(PRESENT(PGPUV)) COPYIN(PGPUV)
+    !$ACC DATA IF(PRESENT(PGP2))  COPYIN(PGP2)
+    !$ACC DATA IF(PRESENT(PGP3A)) COPYIN(PGP3A)
+    !$ACC DATA IF(PRESENT(PGP3B)) COPYIN(PGP3B)
+#endif
+
     IF (LSYNC_TRANS) THEN
 #ifdef ACCGPU
       !$ACC WAIT(1)
@@ -472,11 +487,15 @@ CONTAINS
           ENDIF
         ENDIF
       ENDDO
+! daand: safety here
+!$ACC WAIT(1)
 
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
       !$ACC DATA COPYIN(IFLDA(1:ISEND_FIELD_COUNT_V)) ASYNC(1)
+! daand: safety here
+!$ACC WAIT(1)
 #endif
 
       ISEND_WSET_OFFSET_V = ISEND_WSET_OFFSET(ISETW)
@@ -498,6 +517,8 @@ CONTAINS
             ZCOMBUFS(ICOMBUFS_OFFSET_V+JI) = PGP(JK,IFLD,JBLK)
           ENDDO
         ENDDO
+! daand: safety here
+!$ACC WAIT(1)
       ELSE
 #ifdef OMPGPU
 #endif
@@ -531,6 +552,8 @@ CONTAINS
             ENDIF
          ENDDO
         ENDDO
+! daand: safety here
+!$ACC WAIT(1)
       ENDIF
 #ifdef OMPGPU
 #endif
@@ -612,6 +635,8 @@ CONTAINS
 #endif
 #ifdef ACCGPU
       !$ACC DATA COPYIN(IFLDA(1:IFLDS)) ASYNC(1)
+! daand: safety here
+!$ACC WAIT(1)
 #endif
 
       ISEND_WSET_OFFSET_V = ISEND_WSET_OFFSET(MYSETW)
@@ -636,6 +661,8 @@ CONTAINS
             PREEL_REAL(IPOS) = PGP(JK,IFLD,JBLK)
           ENDDO
         ENDDO
+! daand: safety here
+!$ACC WAIT(1)
       ELSE
 #ifdef OMPGPU
 #endif
@@ -669,6 +696,8 @@ CONTAINS
             ENDIF
           ENDDO
         ENDDO
+! daand: safety here
+!$ACC WAIT(1)
       ENDIF
       CALL GSTATS(1601,1)
 
@@ -723,6 +752,8 @@ CONTAINS
           PREEL_REAL(IPOS) = ZCOMBUFR(ICOMBUFR_OFFSET_V+JL+(JFLD-1)*ILEN)
         ENDDO
       ENDDO
+! daand: safety here
+!$ACC WAIT(1)
     ENDDO
 #ifdef ACCGPU
     !$ACC WAIT(1)
@@ -734,6 +765,7 @@ CONTAINS
 #endif
 #ifdef ACCGPU
     !$ACC END DATA ! ZCOMBUFR
+    !$ACC END DATA ! PREEL_REAL
     !$ACC END DATA ! IRECV_BUFR_TO_OUT,PGPINDICES
     !$ACC END DATA !ZCOMBUFS (present)
     !$ACC END DATA !PGP3B
@@ -742,7 +774,10 @@ CONTAINS
     !$ACC END DATA !PGPUV
     !$ACC END DATA !PGP
 #endif
+
+#ifdef gnarls
     IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_DELETE(ACC_POINTERS(1:ACC_POINTERS_CNT),STREAM=1_ACC_HANDLE_KIND)
+#endif
 
     IF (LHOOK) CALL DR_HOOK('TRGTOL',1,ZHOOK_HANDLE)
   END SUBROUTINE TRGTOL

@@ -153,6 +153,10 @@ CONTAINS
 #ifdef ACCGPU
           !$ACC END KERNELS
 #endif
+
+! daand: safety here
+!$ACC WAIT(1)
+
           ILENS(IRANK) = 0
           ILENR(IRANK) = 0
       ENDIF

@@ -71,12 +71,31 @@ IF (JLOT==0) THEN
   RETURN
 ENDIF
 
+#ifdef gnarls
+
+! fake fft: only take mean value, on cpu
+!$acc data present(preel)
+!$acc update host(preel)
+DO JJ=1,JLOT
+  preel((JJ-1)*(irlen+2)+1)=sum(preel((JJ-1)*(irlen+2)+1:jj*(irlen+2)-2))   ! mean value
+  preel((JJ-1)*(irlen+2)+2:jj*(irlen+2))=0.
+ENDDO
+!$acc update device(preel)
+!$acc end data
+
+#else
+
+!write (6,*) __FILE__, __LINE__; call flush(6)
 !$ACC DATA PRESENT(PREEL) COPYIN(LOENS,OFFSETS)
+!write (6,*) __FILE__, __LINE__; call flush(6)
 CALL EXECUTE_DIR_FFT(PREEL(:),PREEL(:),JLOT, &
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
-
+!write (6,*) __FILE__, __LINE__; call flush(6)
 !$ACC END DATA
+!write (6,*) __FILE__, __LINE__; call flush(6)
+
+#endif
 
 IF (LHOOK) CALL DR_HOOK('EFTDIR_MOD:EFTDIR',1,ZHOOK_HANDLE)
 

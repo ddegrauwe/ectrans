@@ -136,6 +136,10 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
+!write (6,*) __FILE__, __LINE__; call flush(6)
+!write (6,*) 'entered edir_trans_ctl'
+!call flush(6)
+
 ! Perform transform
 
 IF (LHOOK) CALL DR_HOOK('EDIR_TRANS_CTL_MOD:EDIR_TRANS_CTL',0,ZHOOK_HANDLE)
@@ -144,6 +148,7 @@ IF(NPROMATR > 0) THEN
   print *, "This is currently not supported and/or tested (NPROMATR > 0)"
   stop 24
 ENDIF
+
 
 ! Prepare everything
 ALLOCATOR = MAKE_BUFFERED_ALLOCATOR()
@@ -154,6 +159,8 @@ HELTDIR = PREPARE_ELTDIR(ALLOCATOR, KF_FS, KF_UV)
 
 CALL INSTANTIATE_ALLOCATOR(ALLOCATOR, GROWING_ALLOCATION)
 
+!write (6,*) __FILE__, __LINE__; call flush(6)
+
 ! from the PGP arrays to PREEL_REAL
 CALL TRGTOL(ALLOCATOR,HTRGTOL,PREEL,KF_FS,KF_GP,KF_UV_G,KF_SCALARS_G,&
  & KVSETUV=KVSETUV,KVSETSC=KVSETSC,&
@@ -161,22 +168,35 @@ CALL TRGTOL(ALLOCATOR,HTRGTOL,PREEL,KF_FS,KF_GP,KF_UV_G,KF_SCALARS_G,&
  & PGP=PGP,PGPUV=PGPUV,PGP3A=PGP3A,PGP3B=PGP3B,PGP2=PGP2)
 
 
+!write (6,*) __FILE__, __LINE__; call flush(6)
+
 IF (KF_FS > 0) THEN
+
+!write (6,*) __FILE__, __LINE__; call flush(6)
 
   ! fourier transform from PREEL_REAL to PREEL_COMPLEX (in-place!)
   CALL GSTATS(1640,0)
   CALL EFTDIR(ALLOCATOR,PREEL,KF_FS,AUX_PROC=AUX_PROC)
   CALL GSTATS(1640,1)
 
+!write (6,*) __FILE__, __LINE__; call flush(6)
+
   CALL GSTATS(153,0)
   CALL TRLTOM_PACK(ALLOCATOR,HTRLTOM_PACK,PREEL,FOUBUF_IN,KF_FS)    ! formerly known as efourier_out
+!write (6,*) __FILE__, __LINE__; call flush(6)
   CALL TRLTOM_CUDAAWARE(ALLOCATOR,HTRLTOM,FOUBUF_IN,FOUBUF,KF_FS)
   CALL GSTATS(153,1)
+
+!write (6,*) __FILE__, __LINE__; call flush(6)
 
   CALL ELTDIR(ALLOCATOR,HELTDIR,KF_FS,KF_UV,KF_SCALARS,FOUBUF, &
         & PSPVOR,PSPDIV,PSPSCALAR,&
         & PSPSC3A,PSPSC3B,PSPSC2, &
         & PSPMEANU=PMEANU,PSPMEANV=PMEANV)
+
+!write (6,*) 'leaving edir_trans_ctl'
+!call flush(6)
+!write (6,*) __FILE__, __LINE__; call flush(6)
 
 ENDIF
 

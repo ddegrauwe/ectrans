@@ -50,11 +50,26 @@ IF (JLOT==0) THEN
   RETURN
 ENDIF
 
+#ifdef gnarls
+
+! fake fft: only take mean value, on cpu
+!$acc data present(preel)
+!$acc update host(preel)
+DO JJ=1,JLOT
+  preel((JJ-1)*(irlen+2)+2:jj*(irlen+2)-2)=preel((JJ-1)*(irlen+2)+1)
+ENDDO
+!$acc update device(preel)
+!$acc end data
+
+#else
+
 !$ACC DATA PRESENT(PREEL) COPYIN(LOENS,OFFSETS)
 CALL EXECUTE_INV_FFT(PREEL(:),PREEL(:),JLOT, &
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
 !$ACC END DATA
+
+#endif
 
 IF (LHOOK) CALL DR_HOOK('EFTINV_MOD:EFTINV',1,ZHOOK_HANDLE)
 
