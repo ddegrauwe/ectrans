@@ -134,7 +134,7 @@ integer(kind=jpim) :: ncheck = 0
 logical :: lmpoff = .false. ! Message passing switch
 
 ! Verbosity level (0 or 1)
-integer :: verbosity = 0
+integer :: verbosity = 1
 
 integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
 integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
@@ -208,6 +208,8 @@ integer :: seed(20)
 !===================================================================================================
 
 luse_mpi = detect_mpirun()
+
+write (*,*) 'luse_mpi = ',luse_mpi; call flush(6)
 
 ! set random seed for reproducibility
 seed(:)=20220428
@@ -1277,7 +1279,7 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
 
   ! set wavenumbers according to indices : 0.xyz
   if ( init_type == 'index' ) then
-    field(:)=0./0.
+    field(:)=0.
     do ispec=1,nspec2,4
       field(ispec)=(my_km(ispec)/1000.) + (my_kn(ispec)/100000.) + 0.1 ! cos*cos
       field(ispec+1)=(my_km(ispec)/1000.) + (my_kn(ispec)/100000.) + 0.2 ! cos*cos
