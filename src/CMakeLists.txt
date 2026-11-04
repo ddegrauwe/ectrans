@@ -6,9 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-if(HAVE_FFT992)
-  add_subdirectory( fft992 )
-endif()
+# workaround for gmkpack: fft992 is added in trans/cpu
+#if(HAVE_FFT992)
+#  add_subdirectory( fft992 )
+#endif()
+
 add_subdirectory( trans )
 if(HAVE_FIELD_API)
   add_subdirectory(field_api)

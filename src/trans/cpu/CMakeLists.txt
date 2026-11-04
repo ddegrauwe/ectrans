@@ -23,8 +23,16 @@ function(generate_backend_sources)
           algor/*.F90
           internal/*.F90
           external/*.F90
+          ../../fft992/*.F90
     QUIET
   )
+  if ( HAVE_FFT992 )
+    ecbuild_list_add_pattern( LIST files
+      GLOB
+            ../../fft992/*.F90
+      QUIET
+    )    
+  endif()
   if ( NOT HAVE_FFTW )
     list( REMOVE_ITEM files "internal/tpm_fftw.F90")
   endif()
@@ -90,8 +98,8 @@ foreach( prec dp sp )
     target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )
 
     if( HAVE_OMP )
-      ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
-      target_link_libraries( ectrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )
+      ecbuild_debug("target_link_libraries( ectrans_${prec} PUBLIC OpenMP::OpenMP_Fortran )")
+      target_link_libraries( ectrans_${prec} PUBLIC OpenMP::OpenMP_Fortran )
     endif()
 
     if( ECTRANS_HAVE_CONTIGUOUS_ISSUE )
