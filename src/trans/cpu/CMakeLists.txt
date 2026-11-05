@@ -23,15 +23,14 @@ function(generate_backend_sources)
           algor/*.F90
           internal/*.F90
           external/*.F90
-          ../../fft992/*.F90
     QUIET
   )
-  if ( HAVE_FFT992 )
-    ecbuild_list_add_pattern( LIST files
-      GLOB
-            ../../fft992/*.F90
-      QUIET
-    )    
+  if ( NOT HAVE_FFT992 )
+    list( REMOVE_ITEM files "algor/bluestein_mod.F90")
+    list( REMOVE_ITEM files "algor/fft992_cc.F90")
+    list( REMOVE_ITEM files "algor/fft992.F90")
+    list( REMOVE_ITEM files "algor/set99b.F90")
+    list( REMOVE_ITEM files "algor/set99.F90")
   endif()
   if ( NOT HAVE_FFTW )
     list( REMOVE_ITEM files "internal/tpm_fftw.F90")
@@ -90,8 +89,8 @@ foreach( prec dp sp )
       target_compile_definitions( ectrans_${prec} PRIVATE WITH_FFTW )
     endif()
     if( HAVE_FFT992 )
-      ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE fft992_${prec} )")
-      target_link_libraries( ectrans_${prec} PRIVATE fft992_${prec} )
+      #ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE fft992_${prec} )")
+      #target_link_libraries( ectrans_${prec} PRIVATE fft992_${prec} )
       target_compile_definitions( ectrans_${prec} PRIVATE WITH_FFT992 )
     endif()
     ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )")
